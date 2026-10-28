@@ -8,6 +8,7 @@ import { creatureConfig, floorConfig, unlockRequirementLevel } from '../core/lev
 import { TEXTURES } from '../view/textures.ts';
 import { Button } from '../view/ui/Button.ts';
 import { FloorTab } from '../view/ui/FloorTab.ts';
+import { IconToggle } from '../view/ui/IconToggle.ts';
 import type { Modal } from '../view/ui/Modal.ts';
 import { openConfirmPopup, openDiscoveryPopup, openWelcomePopup } from '../view/ui/popups.ts';
 import { ShopPopup } from '../view/ui/ShopPopup.ts';
@@ -76,9 +77,17 @@ export class UIScene extends Phaser.Scene {
       name: 'reset',
       onClick: () => this.confirmReset(),
     });
+    this.createAudioToggles();
     this.toasts = new ToastQueue(this);
     this.input.keyboard?.on('keydown-LEFT', () => this.stepFloor(-1));
     this.input.keyboard?.on('keydown-RIGHT', () => this.stepFloor(1));
+    // Todos los botones (también los de los popups) suenan al tocarlos; uno gris, a "no se puede".
+    // Los de comprar tienen su propio sonido al concretar la compra.
+    this.input.on(Phaser.Input.Events.GAMEOBJECT_DOWN, (_pointer: Phaser.Input.Pointer, object: Phaser.GameObjects.GameObject) => {
+      if (!(object instanceof Button)) return;
+      if (!object.isEnabled) this.ctx.audio.play('denied');
+      else if (!object.name.startsWith('buy:')) this.ctx.audio.play('click');
+    });
 
     const { model, ui } = this.ctx;
     this.unsubscribers = [
@@ -106,6 +115,7 @@ export class UIScene extends Phaser.Scene {
     if (view.welcome && !this.modal) {
       this.modal = openWelcomePopup(this, view.welcome, () => this.onModalClosed());
       view.welcome = null;
+      this.ctx.audio.play('welcome');
     }
     const floor = view.floor;
     const floorChanged = floor !== shown.floor;
@@ -167,7 +177,13 @@ export class UIScene extends Phaser.Scene {
     const visit = (objects: Phaser.GameObjects.GameObject[]) => {
       for (const object of objects) {
         const label =
-          object instanceof Button ? object.name || object.label : object instanceof FloorTab ? `tab:${object.floor + 1}` : null;
+          object instanceof Button
+            ? object.name || object.label
+            : object instanceof FloorTab
+              ? `tab:${object.floor + 1}`
+              : object instanceof IconToggle
+                ? object.name
+                : null;
         if (label && object instanceof Phaser.GameObjects.Container && object.visible && object.input?.enabled) {
           const bounds = object.getBounds();
           buttons.push({ label, x: bounds.centerX, y: bounds.centerY });
@@ -215,6 +231,33 @@ export class UIScene extends Phaser.Scene {
     this.capacityText = this.add.text(right, EGG_ROW_Y, '', textStyle({ size: 42, align: 'right' })).setOrigin(1, 0.5);
   }
 
+  private createAudioToggles(): void {
+    const { audio } = this.ctx;
+    const { audioToggles } = LAYOUT;
+    new IconToggle(this, audioToggles.sfxX, LAYOUT.hintY, {
+      icon: TEXTURES.sound,
+      size: audioToggles.size,
+      hitPadding: audioToggles.hitPadding,
+      on: audio.sfxOn,
+      name: 'toggle:sfx',
+      onToggle: (on) => {
+        audio.setSfx(on);
+        audio.play('click'); // Al prender se escucha; al apagar ya no.
+      },
+    });
+    new IconToggle(this, audioToggles.musicX, LAYOUT.hintY, {
+      icon: TEXTURES.music,
+      size: audioToggles.size,
+      hitPadding: audioToggles.hitPadding,
+      on: audio.musicOn,
+      name: 'toggle:music',
+      onToggle: (on) => {
+        audio.setMusic(on);
+        audio.play('click');
+      },
+    });
+  }
+
   private drawEggBar(progress: number, full: boolean): void {
     const { x, width, height } = BAR;
     const y = EGG_ROW_Y - height / 2;
@@ -258,10 +301,12 @@ export class UIScene extends Phaser.Scene {
   private onTabSelected(floor: number): void {
     if (this.modal) return;
     if (!this.ctx.model.isFloorUnlocked(floor)) {
+      this.ctx.audio.play('denied');
       const required = unlockRequirementLevel(floor);
       if (required !== null) this.toasts.push(STRINGS.floorLocked(floor, creatureConfig(required).name));
       return;
     }
+    if (floor === this.ctx.view.floor) this.ctx.audio.play('click');
     this.ctx.ui.emit('selectFloor', { floor });
   }
 
@@ -282,15 +327,22 @@ export class UIScene extends Phaser.Scene {
     const level = this.discoveryQueue.shift();
     if (level === undefined) return;
     this.modal = openDiscoveryPopup(this, level, () => this.onModalClosed());
+    this.ctx.audio.play('discover');
   }
 
   /** La tienda del piso que se ve. */
   private openShop(): void {
     if (this.modal) return;
-    this.shop = new ShopPopup(this, this.ctx.model, this.ctx.view.floor, () => {
-      this.shop = null;
-      this.onModalClosed();
-    });
+    this.shop = new ShopPopup(
+      this,
+      this.ctx.model,
+      this.ctx.view.floor,
+      () => {
+        this.shop = null;
+        this.onModalClosed();
+      },
+      () => this.ctx.audio.play('purchase'),
+    );
     this.modal = this.shop.modal;
   }
 

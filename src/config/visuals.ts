@@ -21,12 +21,16 @@ export const LAYOUT = {
   hintX: 44,
   hintY: 1876,
   resetButton: { x: 946, width: 220, height: 64 },
+  /** Botones redondos para silenciar efectos y música, entre la pista y "Reiniciar". */
+  audioToggles: { sfxX: 690, musicX: 772, size: 72, hitPadding: 20 },
 } as const;
 
 /** Íconos de la interfaz que se generan desde emojis (los de criaturas están en creatures.ts). */
 export const ICONS = {
   lock: '🔒',
   shop: '🛒',
+  sound: '🔊',
+  music: '🎵',
 } as const;
 
 export const SIZES = {

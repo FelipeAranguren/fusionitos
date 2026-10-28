@@ -29,6 +29,10 @@ src/config/   datos y constantes, sin lógica
   creatures.ts  catálogo de pisos y criaturas (nombre, emoji, imagen opcional, colores)
   visuals.ts    layout, tamaños, velocidades y duraciones de animación
   strings.ts    todos los textos de la UI (en español)
+  sounds.ts     recetas de los efectos de sonido y mezcla general (AUDIO_MIX)
+  music.ts      partitura del loop de música
+src/audio/    sonido con Web Audio, sin Phaser: AudioEngine (efectos y música, silencio, pausa);
+              notation.ts y settings.ts son puros y tienen tests
 src/core/     lógica pura del juego: SIN Phaser, SIN DOM; testeada con Vitest
   GameModel.ts  fachada: estado + comandos (tick, hatch, merge, move, reset) + eventos
 src/scenes/   escenas Phaser: BootScene (texturas), GameScene (campo de un piso), UIScene (HUD, pestañas y popups)
@@ -50,7 +54,9 @@ src/main.ts   arma GameModel + SaveManager + Phaser.Game y conecta el guardado
   - Las escenas leen `view.floor` en `update()`.
 
 ### Configuración centralizada
-- Ningún número de balance fuera de `balance.ts`, ningún texto de UI fuera de `strings.ts` y ningún emoji de criatura fuera de `creatures.ts`.
+- Ningún número de balance fuera de `balance.ts`, ningún texto de UI fuera de `strings.ts`, ningún emoji de criatura fuera de `creatures.ts` y ningún sonido fuera de `sounds.ts` y `music.ts`.
+- Las escenas tocan sonidos con `ctx.audio.play('nombre')`. Un sonido nuevo se agrega como receta en `sounds.ts`, y el tipo `SoundName` lo valida.
+- El audio solo arranca después de un gesto del usuario (`main.ts` llama a `audio.unlock()`): no intentes reproducir antes ni lo trates como error.
 - Para cambiar un emoji por una imagen: poné el archivo en `public/assets/creatures/` y completá `image` en `creatures.ts`. Nada más.
 
 ## Convenciones de código
@@ -85,9 +91,10 @@ src/main.ts   arma GameModel + SaveManager + Phaser.Game y conecta el guardado
   - `model` y `game`;
   - `spawnEgg()` y `spawnCreature(level)` (aparece en el piso de su nivel y lo desbloquea);
   - `addCoins(n)` y `simulateAway(ms)` (ingreso offline y bienvenida, como al volver a la pestaña);
+  - `audio()`: estado del audio (`locked` hasta el primer gesto), música y efectos prendidos, y los últimos sonidos que sonaron;
   - `selectFloor(floor)` y `currentFloor()` (pisos desde 0);
   - `entities()` (las del piso que se ve), con posiciones en píxeles de la página;
-  - `buttons()`: los botones visibles, con posiciones en píxeles de la página. Se llaman `shop`, `shop:close`, `buy:N`, `reset`, `tab:N`; los de los popups, por su texto;
+  - `buttons()`: los botones visibles, con posiciones en píxeles de la página. Se llaman `shop`, `shop:close`, `buy:N`, `reset`, `tab:N`, `toggle:sfx`, `toggle:music`; los de los popups, por su texto;
   - `toPage(x, y)` y `clearSave()`.
 - Con el MCP de Playwright (`.mcp.json`): `npm run dev` y abrir http://localhost:5173.
   - Para arrastrar sobre el canvas, usá `page.mouse` (down / move con pasos / up) con las coordenadas de `__debug.entities()`.

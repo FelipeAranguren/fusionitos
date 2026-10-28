@@ -3,6 +3,7 @@ import '@fontsource/fredoka/600.css';
 import '@fontsource/fredoka/700.css';
 import './style.css';
 import Phaser from 'phaser';
+import { AudioEngine } from './audio/AudioEngine.ts';
 import { BALANCE } from './config/balance.ts';
 import { STRINGS } from './config/strings.ts';
 import { GAME_HEIGHT, GAME_WIDTH } from './config/visuals.ts';
@@ -30,7 +31,9 @@ async function waitForFonts(timeoutMs: number): Promise<void> {
 }
 
 async function start(): Promise<void> {
-  const saves = new SaveManager(getStorage());
+  const storage = getStorage();
+  const saves = new SaveManager(storage);
+  const audio = new AudioEngine(storage);
   const loaded = saves.load();
   const model = new GameModel(loaded?.state);
   const ui = new Emitter<UiEvents>();
@@ -44,6 +47,7 @@ async function start(): Promise<void> {
     model,
     ui,
     view,
+    audio,
     saveNow: () => {
       if (saves.save(model.state, hiddenSince ?? Date.now()) || warnedSaveFailure) return;
       warnedSaveFailure = true;
@@ -78,8 +82,15 @@ async function start(): Promise<void> {
       height: GAME_HEIGHT,
     },
     disableContextMenu: true,
+    // El sonido lo maneja AudioEngine; el de Phaser no se usa.
+    audio: { noAudio: true },
     scene: [new BootScene(), new GameScene(ctx), new UIScene(ctx)],
   });
+
+  // Los navegadores solo dejan arrancar el audio con un gesto del usuario (en iOS, `touchend`).
+  for (const type of ['pointerdown', 'pointerup', 'touchend', 'keydown']) {
+    window.addEventListener(type, () => audio.unlock(), { passive: true });
+  }
 
   // Autoguardado, y también al ocultar o cerrar la pestaña (en celulares `pagehide` es lo confiable).
   window.setInterval(ctx.saveNow, BALANCE.AUTOSAVE_INTERVAL_MS);
@@ -87,9 +98,11 @@ async function start(): Promise<void> {
     if (document.visibilityState === 'hidden') {
       hiddenSince ??= Date.now();
       ctx.saveNow();
+      audio.pause();
     } else if (hiddenSince !== null) {
       const awayMs = Date.now() - hiddenSince;
       hiddenSince = null;
+      audio.resume();
       welcomeBack(awayMs);
     }
   });
@@ -98,7 +111,7 @@ async function start(): Promise<void> {
 
   if (import.meta.env.DEV) {
     const { installDebugHooks } = await import('./debug.ts');
-    installDebugHooks(game, ctx, { clearSave: () => saves.clear(), simulateAway: welcomeBack });
+    installDebugHooks(game, ctx, { clearSave: () => saves.clear(), simulateAway: welcomeBack, audio });
   }
 }
 

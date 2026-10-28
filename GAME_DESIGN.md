@@ -195,7 +195,7 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
 - **Banner** "¡Campo lleno!" mientras no quede lugar en el piso que se ve.
 - **Popups:** "¡Nueva criatura descubierta!", la tienda, la bienvenida tras una ausencia y la confirmación de reinicio. Se muestran de a uno y, mientras están abiertos, bloquean el campo, las pestañas y el teclado.
 - **Toasts:** avisos cortos ("¡Piso 2 desbloqueado!", "El Piso 2 está lleno", "¡Nivel máximo!", qué abre un piso bloqueado).
-- **Pie:** las pestañas de pisos y, debajo, una pista de cómo jugar y el botón **Reiniciar** (abajo, para no tocarlo sin querer).
+- **Pie:** las pestañas de pisos y, debajo, una pista de cómo jugar, los botones redondos 🔊 (efectos) y 🎵 (música) y el botón **Reiniciar** (abajo, para no tocarlo sin querer).
 
 ## 10. Guardado — FASE 1
 
@@ -263,5 +263,34 @@ Las constantes visuales (tamaños, velocidades de deambular, duraciones de anima
 - [x] Ingreso offline (al abrir el juego y al volver a la pestaña) con popup de bienvenida.
 - [x] Guardado v2 con migración desde v1.
 
+### Extra — sonido y música ✅
+- [x] Efectos sintetizados para cada acción y música de fondo en loop.
+- [x] Botones para silenciar efectos y música, con la preferencia guardada.
+
 ### Ideas futuras (sin fase asignada)
-Sonido y música, arte definitivo para las 30 criaturas, más pisos, logros, tutorial guiado y PWA instalable.
+Arte definitivo para las 30 criaturas, más pisos, logros, tutorial guiado y PWA instalable.
+
+## 13. Sonido y música
+
+Todo se sintetiza en el navegador con Web Audio: no hay archivos de audio ni licencias de por medio. Los efectos están en `src/config/sounds.ts` (cada uno es una lista de capas: tonos que pueden deslizarse, arpegios y ruido filtrado) y la música en `src/config/music.ts`.
+
+| Momento | Sonido |
+|---|---|
+| Cae un huevo (al primer rebote) | golpe suave (`eggLand`) |
+| Se toca un huevo / sale la criatura | crack (`eggCrack`) / "pop" (`hatchPop`) |
+| Se levanta una criatura / se suelta sin fusionar | `pickUp` / `drop` |
+| Fusión en el mismo piso | arpegio (`merge`), 2 semitonos más agudo por cada tier |
+| Fusión que sube de piso | fanfarria (`levelUp`) |
+| Pulso de monedas | tintineo bajito (`coin`), con variación de tono y un mínimo de 110 ms entre dos |
+| Compra en la tienda | `purchase` (también aparece la criatura: `hatchPop`) |
+| Algo que no se puede (botón gris, piso bloqueado, merge rechazado) | `denied` |
+| Popup de criatura nueva / bienvenida | `discover` / `welcome` (cascada de monedas) |
+| Cambio de piso | `whoosh` |
+| Botones | `click` |
+
+- **Música:** loop original de 16 compases (I–vi–IV–V en Do mayor, 100 BPM, unos 38 s), con melodía, arpegio, bajo, un bombo y un hi-hat suaves, y eco sobre la melodía. Va bajita: acompaña sin tapar.
+- **Controles:** 🔊 apaga y prende los efectos y 🎵 la música (con fundido). Apagados se ven tachados.
+- **Preferencia:** se guarda aparte de la partida (`fusionitos.audio`), así que reiniciar el juego no la cambia.
+- **Reglas del navegador:** el audio arranca con el primer toque o tecla del jugador; antes, todo queda en silencio sin fallar.
+- **Pestaña oculta:** el audio se pausa, igual que el juego.
+- **Mezcla general:** `AUDIO_MIX` en `sounds.ts`.

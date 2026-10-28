@@ -65,6 +65,10 @@ export class Button extends Phaser.GameObjects.Container {
     return this.caption.text;
   }
 
+  get isEnabled(): boolean {
+    return this.enabled;
+  }
+
   setLabel(label: string): this {
     if (label === this.caption.text) return this;
     this.caption.setText(label);

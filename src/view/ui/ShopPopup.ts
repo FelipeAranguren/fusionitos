@@ -28,7 +28,7 @@ export class ShopPopup {
   private readonly status: Phaser.GameObjects.Text;
   private statusShown: boolean | null = null;
 
-  constructor(scene: Phaser.Scene, model: GameModel, floor: number, onClosed: () => void) {
+  constructor(scene: Phaser.Scene, model: GameModel, floor: number, onClosed: () => void, onPurchased: () => void) {
     this.model = model;
     this.floor = floor;
     this.modal = new Modal(scene, CARD.width, CARD.height, onClosed);
@@ -47,7 +47,7 @@ export class ShopPopup {
 
     this.rows = Array.from(
       { length: BALANCE.CREATURES_PER_FLOOR },
-      (_, i) => new ShopRow(scene, card, model, levelOf(floor, i + 1), ROW.firstY + i * ROW.step),
+      (_, i) => new ShopRow(scene, card, model, levelOf(floor, i + 1), ROW.firstY + i * ROW.step, onPurchased),
     );
     this.status = scene.add.text(0, 540, '', { ...dark(30, 600), wordWrap: { width: 800 } }).setOrigin(0.5);
     card.add([
@@ -89,12 +89,21 @@ class ShopRow {
   private readonly detail: Phaser.GameObjects.Text;
   private readonly lockText: Phaser.GameObjects.Text;
   private readonly buy: Button;
+  private readonly onPurchased: () => void;
   private shown = '';
 
-  constructor(scene: Phaser.Scene, card: Phaser.GameObjects.Container, model: GameModel, level: number, y: number) {
+  constructor(
+    scene: Phaser.Scene,
+    card: Phaser.GameObjects.Container,
+    model: GameModel,
+    level: number,
+    y: number,
+    onPurchased: () => void,
+  ) {
     this.scene = scene;
     this.model = model;
     this.level = level;
+    this.onPurchased = onPurchased;
     const background = scene.add.graphics();
     background.fillStyle(COLORS.cardRow, 1).fillRoundedRect(-ROW.width / 2, y - ROW.height / 2, ROW.width, ROW.height, 32);
     this.icon = scene.add.image(-340, y, creatureTextureKey(level)).setDisplaySize(120, 120);
@@ -140,6 +149,7 @@ class ShopRow {
 
   private purchase(): void {
     if (!this.model.buy(this.level).ok) return;
+    this.onPurchased();
     this.scene.tweens.killTweensOf(this.icon);
     this.icon.setScale(this.iconScale);
     this.scene.tweens.add({ targets: this.icon, scale: this.iconScale * 1.2, duration: 110, yoyo: true, ease: 'Quad.easeOut' });

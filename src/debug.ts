@@ -1,4 +1,5 @@
 import type Phaser from 'phaser';
+import type { AudioEngine } from './audio/AudioEngine.ts';
 import { GAME_HEIGHT, GAME_WIDTH } from './config/visuals.ts';
 import type { GameModel } from './core/GameModel.ts';
 import type { Creature, Egg } from './core/types.ts';
@@ -20,6 +21,8 @@ export interface DebugApi {
   addCoins(amount: number): void;
   /** Simula volver después de `ms` de ausencia (ingreso offline y bienvenida). */
   simulateAway(ms: number): void;
+  /** Estado del audio y los últimos sonidos que sonaron. */
+  audio(): { state: string; musicOn: boolean; sfxOn: boolean; musicPlaying: boolean; recent: string[] };
   /** Pide mostrar un piso (igual que tocar su pestaña). */
   selectFloor(floor: number): void;
   /** Piso que muestra el campo ahora (índice desde 0). */
@@ -41,9 +44,10 @@ declare global {
 interface DebugOptions {
   clearSave(): void;
   simulateAway(ms: number): void;
+  audio: AudioEngine;
 }
 
-export function installDebugHooks(game: Phaser.Game, ctx: GameContext, { clearSave, simulateAway }: DebugOptions): void {
+export function installDebugHooks(game: Phaser.Game, ctx: GameContext, { clearSave, simulateAway, audio }: DebugOptions): void {
   const { model } = ctx;
   const toPage = (x: number, y: number): PagePoint => {
     const rect = game.canvas.getBoundingClientRect();
@@ -56,6 +60,13 @@ export function installDebugHooks(game: Phaser.Game, ctx: GameContext, { clearSa
     spawnCreature: (level) => model.debugAddCreature(level),
     addCoins: (amount) => model.debugAddCoins(amount),
     simulateAway,
+    audio: () => ({
+      state: audio.state,
+      musicOn: audio.musicOn,
+      sfxOn: audio.sfxOn,
+      musicPlaying: audio.musicPlaying,
+      recent: [...audio.recent],
+    }),
     selectFloor: (floor) => ctx.ui.emit('selectFloor', { floor }),
     currentFloor: () => ctx.view.floor,
     entities: () => game.scene.getScene<GameScene>('Game').debugViews().map((view) => ({ ...view, page: toPage(view.x, view.y) })),

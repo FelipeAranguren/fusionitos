@@ -1,3 +1,4 @@
+import type { AudioPort } from '../audio/AudioEngine.ts';
 import type { OfflineEarnings } from '../core/economy.ts';
 import type { Emitter } from '../core/emitter.ts';
 import type { GameModel } from '../core/GameModel.ts';
@@ -22,6 +23,7 @@ export interface GameContext {
   readonly model: GameModel;
   readonly ui: Emitter<UiEvents>;
   readonly view: ViewState;
+  readonly audio: AudioPort;
   /** Guarda ya mismo. */
   saveNow(): void;
   /** Borra la partida y guarda el estado nuevo. */

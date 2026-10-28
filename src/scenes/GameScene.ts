@@ -3,7 +3,7 @@ import type { FloorConfig } from '../config/creatures.ts';
 import { STRINGS } from '../config/strings.ts';
 import { ANIM, LAYOUT, SIZES } from '../config/visuals.ts';
 import type { GameEvents } from '../core/GameModel.ts';
-import { floorConfig } from '../core/levels.ts';
+import { floorConfig, tierOfLevel } from '../core/levels.ts';
 import type { MergeResult } from '../core/merge.ts';
 import { mulberry32 } from '../core/rng.ts';
 import type { Creature, DeepReadonly, Egg, EntityId } from '../core/types.ts';
@@ -118,11 +118,15 @@ export class GameScene extends Phaser.Scene {
         else if (event.createdFloor === this.floorIndex) this.addCreature(event.created, 'merge');
       }),
       events.on('creatureAdded', ({ floor, creature }) => {
-        if (floor === this.floorIndex) this.addCreature(creature, 'pop');
+        if (floor !== this.floorIndex) return;
+        this.ctx.audio.play('hatchPop');
+        this.addCreature(creature, 'pop');
       }),
       events.on('coinsPopped', ({ floor, entityId, amount }) => {
         const view = floor === this.floorIndex ? this.creatures.get(entityId) : undefined;
-        if (view && !view.isMerging) this.effects.coinPop(view.x, view.y - SIZES.creature * 0.6, amount);
+        if (!view || view.isMerging) return;
+        this.effects.coinPop(view.x, view.y - SIZES.creature * 0.6, amount);
+        this.ctx.audio.play('coin');
       }),
       // Al reiniciar, los pisos de arriba vuelven a bloquearse: se vuelve al piso 1.
       events.on('stateReset', () => (this.floorIndex === 0 ? this.rebuild() : this.switchFloor(0))),
@@ -138,6 +142,7 @@ export class GameScene extends Phaser.Scene {
   private switchFloor(floor: number): void {
     if (this.switching || floor === this.floorIndex || !this.ctx.model.isFloorUnlocked(floor)) return;
     this.switching = true;
+    this.ctx.audio.play('whoosh');
     this.input.enabled = false;
     this.cameras.main.fadeOut(ANIM.floorFadeMs, 0, 0, 0);
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.restart({ floor }));
@@ -163,7 +168,7 @@ export class GameScene extends Phaser.Scene {
     const position = toWorld(egg);
     const view = new EggView(this, egg.id, position.x, position.y, (tapped) => this.ctx.model.hatch(tapped.entityId));
     this.eggs.set(egg.id, view);
-    if (falling) view.playDrop();
+    if (falling) view.playDrop(() => this.ctx.audio.play('eggLand'));
     else view.startWiggle();
   }
 
@@ -180,10 +185,12 @@ export class GameScene extends Phaser.Scene {
   private onEggHatched(eggId: EntityId, creature: DeepReadonly<Creature>): void {
     const eggView = this.eggs.get(eggId);
     this.eggs.delete(eggId);
+    this.ctx.audio.play('eggCrack');
     const open = () => {
       if (!this.exists(creature.id)) return;
       const position = toWorld(creature);
       this.effects.hatchBurst(position.x, position.y);
+      this.ctx.audio.play('hatchPop');
       this.addCreature(creature, 'pop');
     };
     if (eggView) eggView.playHatch(open);
@@ -201,6 +208,9 @@ export class GameScene extends Phaser.Scene {
 
     this.time.delayedCall(ANIM.mergeMoveMs + ANIM.mergeShrinkMs, () => {
       this.effects.mergeBurst(meet.x, meet.y);
+      // Cuanto más alto el tier, más agudo; si sube de piso, fanfarria.
+      if (event.createdFloor !== event.floor) this.ctx.audio.play('levelUp');
+      else this.ctx.audio.play('merge', { semitones: (tierOfLevel(event.created.level) - 1) * 2 });
       if (event.createdFloor !== this.floorIndex) {
         this.effects.floatingText(meet.x, meet.y - SIZES.creature * 0.5, STRINGS.movedUp(event.createdFloor));
       } else if (this.exists(event.created.id)) {
@@ -226,6 +236,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private onDragStart(view: CreatureView): void {
+    this.ctx.audio.play('pickUp');
     view.beginDrag();
     this.dropTarget = null;
     for (const other of this.matchesOf(view)) other.setHighlight('match');
@@ -252,8 +263,10 @@ export class GameScene extends Phaser.Scene {
       // El destino puede estar a mitad de un paso: la fusión ocurre donde se lo ve.
       this.savePosition(target);
       const result = model.merge(view.entityId, target.entityId);
-      if (result.ok) return; // Las animaciones las dispara el evento creaturesMerged.
+      if (result.ok) return; // Las animaciones y el sonido los dispara el evento creaturesMerged.
       this.notifyMergeFailure(result);
+    } else {
+      this.ctx.audio.play('drop');
     }
     view.endDrag();
     this.savePosition(view);
@@ -279,6 +292,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private notifyMergeFailure(result: Extract<MergeResult, { ok: false }>): void {
+    this.ctx.audio.play('denied');
     if (result.reason === 'max-level') this.ctx.ui.emit('toast', { text: STRINGS.maxLevel });
     if (result.reason === 'target-floor-full') {
       this.ctx.ui.emit('toast', { text: STRINGS.floorFull(result.floor ?? this.floorIndex + 1) });

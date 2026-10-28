@@ -27,8 +27,10 @@ export class EggView extends Phaser.GameObjects.Container {
     scene.add.existing(this);
   }
 
-  /** Cae desde arriba con rebote; la sombra crece al acercarse al suelo. */
-  playDrop(): void {
+  /** Cae desde arriba con rebote; la sombra crece al acercarse al suelo. `onLand`, al primer toque. */
+  playDrop(onLand?: () => void): void {
+    // Con Bounce.easeOut el primer toque contra el suelo llega a 1/2.75 de la duración.
+    if (onLand) this.scene.time.delayedCall(ANIM.eggDropMs / 2.75, onLand);
     this.sprite.setY(-ANIM.eggDropHeight).setAlpha(0);
     this.shadow.setScale(0.25).setAlpha(0);
     this.scene.tweens.add({ targets: this.sprite, alpha: 1, duration: 150 });
