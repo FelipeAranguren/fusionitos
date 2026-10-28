@@ -14,8 +14,8 @@ export interface ToneOptions {
   attack?: number;
 }
 
-/** Ataque corto y caída exponencial hasta el silencio. */
-function envelope(param: AudioParam, start: number, duration: number, volume: number, attack = 0.005): void {
+/** Ataque corto (sin clic) y caída exponencial hasta el silencio. */
+function envelope(param: AudioParam, start: number, duration: number, volume: number, attack = 0.008): void {
   const rise = Math.min(attack, duration * 0.5);
   param.setValueAtTime(SILENT, start);
   param.exponentialRampToValueAtTime(volume, start + rise);
@@ -24,7 +24,9 @@ function envelope(param: AudioParam, start: number, duration: number, volume: nu
 
 /** Programa una nota. Los nodos se desconectan solos cuando termina. */
 export function playTone(ctx: BaseAudioContext, out: AudioNode, options: ToneOptions): void {
-  const { wave, freq, freqEnd, start, duration, volume, attack } = options;
+  const { wave, freq, freqEnd, duration, volume, attack } = options;
+  // Nunca en el pasado: la envolvente se aplicaría de golpe y sonaría un clic.
+  const start = Math.max(options.start, ctx.currentTime);
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.type = wave;
@@ -43,7 +45,8 @@ export function playNoise(
   noise: AudioBuffer,
   layer: Omit<NoiseLayer, 'wave' | 'start'> & { start: number },
 ): void {
-  const { start, duration, volume, attack, filter } = layer;
+  const { duration, volume, attack, filter } = layer;
+  const start = Math.max(layer.start, ctx.currentTime);
   const source = ctx.createBufferSource();
   const gain = ctx.createGain();
   source.buffer = noise;

@@ -55,11 +55,23 @@ export interface SoundRecipe {
 
 /** Mezcla general (0..1). La música va bajita: acompaña, no tapa. */
 export const AUDIO_MIX = {
-  master: 0.8,
+  /** Va más bajo de lo que parece: el limitador suma ~1.7 dB de compensación automática. */
+  master: 0.55,
   sfx: 0.6,
   music: 0.3,
   /** Constante de tiempo del fundido al prender o apagar la música. */
   musicFadeSeconds: 0.25,
+  /**
+   * Corte de graves de toda la salida. Los parlantes de celular y notebook no reproducen
+   * frecuencias tan bajas: si les llegan, el cono hace tope y suena a chasquido o saturación.
+   */
+  lowCutHz: 120,
+  /**
+   * Limitador de la salida: red de seguridad para cuando se juntan muchos sonidos (comprime en vez de recortar).
+   * Umbral alto a propósito: el compresor de Web Audio sube el volumen general en proporción a lo que
+   * comprime, y con un umbral bajo terminaba sonando más fuerte.
+   */
+  limiter: { thresholdDb: -3, kneeDb: 3, ratio: 20 },
 } as const;
 
 export const SOUNDS = {
@@ -68,17 +80,18 @@ export const SOUNDS = {
   /** Algo que no se puede: botón gris, piso bloqueado, merge rechazado. */
   denied: {
     layers: [
-      { wave: 'square', pitch: 220, pitchEnd: 160, duration: 0.12, volume: 0.07 },
-      { wave: 'square', pitch: 165, pitchEnd: 120, start: 0.1, duration: 0.16, volume: 0.07 },
+      { wave: 'triangle', pitch: 300, pitchEnd: 220, duration: 0.12, volume: 0.16 },
+      { wave: 'triangle', pitch: 230, pitchEnd: 160, start: 0.1, duration: 0.16, volume: 0.16 },
     ],
   },
   pickUp: { layers: [{ wave: 'sine', pitch: 'C5', pitchEnd: 'G5', duration: 0.08, volume: 0.26 }] },
   drop: { layers: [{ wave: 'sine', pitch: 'G4', pitchEnd: 'C4', duration: 0.09, volume: 0.22 }] },
+  /** Golpe suave: arriba de los graves que los parlantes chicos no reproducen. */
   eggLand: {
     jitter: 1.5,
     layers: [
-      { wave: 'sine', pitch: 170, pitchEnd: 70, duration: 0.16, volume: 0.45 },
-      { wave: 'noise', duration: 0.05, volume: 0.1, filter: { type: 'lowpass', freq: 800 } },
+      { wave: 'sine', pitch: 260, pitchEnd: 140, duration: 0.13, volume: 0.3, attack: 0.006 },
+      { wave: 'noise', duration: 0.04, volume: 0.06, filter: { type: 'lowpass', freq: 1500 } },
     ],
   },
   eggCrack: {
@@ -112,13 +125,16 @@ export const SOUNDS = {
       { wave: 'noise', start: 0.3, duration: 0.4, volume: 0.04, filter: { type: 'highpass', freq: 7000 } },
     ],
   },
-  /** Pulso de monedas: muy seguido, por eso bajito, variado y con un mínimo entre dos. */
+  /**
+   * Pulso de monedas: suena muy seguido, por eso es bajito, redondo (ataque suave, nada de clic seco),
+   * con variación de tono y un mínimo entre dos.
+   */
   coin: {
     jitter: 2,
-    minGapMs: 110,
+    minGapMs: 220,
     layers: [
-      { wave: 'sine', pitch: 'B6', duration: 0.05, volume: 0.06 },
-      { wave: 'sine', pitch: 'E7', start: 0.045, duration: 0.09, volume: 0.05 },
+      { wave: 'sine', pitch: 'E6', duration: 0.12, volume: 0.04, attack: 0.012 },
+      { wave: 'sine', pitch: 'B6', start: 0.06, duration: 0.16, volume: 0.03, attack: 0.012 },
     ],
   },
   purchase: {

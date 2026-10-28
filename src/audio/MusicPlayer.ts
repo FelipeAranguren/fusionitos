@@ -4,24 +4,24 @@ import { playNoise, playTone } from './synth.ts';
 
 // Planificación con margen: un timer revisa seguido y programa en el reloj de Web Audio
 // las notas de los próximos instantes. Así el ritmo no depende de que el timer sea puntual.
-const LOOKAHEAD_SECONDS = 0.15;
+const LOOKAHEAD_SECONDS = 0.3;
 const TIMER_MS = 25;
 
 /** Toca el loop de MUSIC por un nodo de salida. */
 export class MusicPlayer {
-  private readonly ctx: AudioContext;
+  private readonly ctx: BaseAudioContext;
   private readonly out: AudioNode;
   private readonly noise: AudioBuffer;
   /** Entrada del eco (melodía y arpegio pasan por acá). */
   private readonly echoIn: GainNode;
   private readonly lead: BarNote[][];
-  private readonly stepSeconds: number;
-  private readonly totalSteps: number;
+  readonly stepSeconds: number;
+  readonly totalSteps: number;
   private timer: number | null = null;
   private step = 0;
   private nextTime = 0;
 
-  constructor(ctx: AudioContext, out: AudioNode, noise: AudioBuffer) {
+  constructor(ctx: BaseAudioContext, out: AudioNode, noise: AudioBuffer) {
     this.ctx = ctx;
     this.out = out;
     this.noise = noise;
@@ -60,17 +60,10 @@ export class MusicPlayer {
     this.timer = null;
   }
 
-  private schedule(): void {
-    while (this.nextTime < this.ctx.currentTime + LOOKAHEAD_SECONDS) {
-      this.playStep(this.step, this.nextTime);
-      this.nextTime += this.stepSeconds;
-      this.step = (this.step + 1) % this.totalSteps;
-    }
-  }
-
-  private playStep(globalStep: number, time: number): void {
-    const { stepsPerBar, instruments } = MUSIC;
-    const bar = Math.floor(globalStep / stepsPerBar);
+  /** Programa las notas de un paso del loop en `time`. También sirve para renderizar sin tiempo real. */
+  scheduleStep(globalStep: number, time: number): void {
+    const { stepsPerBar, instruments, shaker } = MUSIC;
+    const bar = Math.floor(globalStep / stepsPerBar) % MUSIC.lead.length;
     const step = globalStep % stepsPerBar;
     const { root, intervals } = chordTones(MUSIC.chords[bar]);
 
@@ -88,17 +81,31 @@ export class MusicPlayer {
       this.note(this.out, instruments.bass, midiToHz(12 * (bass.octave + 1) + root + intervals[bass.tone]), time, bass.length);
     }
 
-    if ((MUSIC.kickSteps as readonly number[]).includes(step)) {
-      playTone(this.ctx, this.out, { wave: 'sine', freq: 120, freqEnd: 45, start: time, duration: 0.14, volume: MUSIC.kick.volume });
-    }
-    if ((MUSIC.hatSteps as readonly number[]).includes(step)) {
+    if ((shaker.steps as readonly number[]).includes(step)) {
       playNoise(this.ctx, this.out, this.noise, {
         start: time,
-        duration: 0.03,
-        volume: MUSIC.hat.volume,
-        filter: { type: 'highpass', freq: 7000 },
+        duration: shaker.duration,
+        volume: shaker.volume,
+        attack: shaker.attack,
+        filter: { type: 'bandpass', freq: shaker.freq, q: 0.8 },
       });
     }
+  }
+
+  private schedule(): void {
+    const now = this.ctx.currentTime;
+    // Si el hilo principal se trabó y quedamos atrás, se saltean esas notas:
+    // tocarlas tarde comprime sus envolventes y suena a chasquido.
+    while (this.nextTime < now) this.advance();
+    while (this.nextTime < now + LOOKAHEAD_SECONDS) {
+      this.scheduleStep(this.step, this.nextTime);
+      this.advance();
+    }
+  }
+
+  private advance(): void {
+    this.nextTime += this.stepSeconds;
+    this.step = (this.step + 1) % this.totalSteps;
   }
 
   private note(

@@ -1,5 +1,6 @@
 import { AUDIO_MIX, SOUNDS, type SoundName, type SoundRecipe } from '../config/sounds.ts';
 import type { StorageLike } from '../core/save.ts';
+import { createMix } from './mix.ts';
 import { MusicPlayer } from './MusicPlayer.ts';
 import { loadAudioSettings, saveAudioSettings, type AudioSettings } from './settings.ts';
 import { createNoiseBuffer, playRecipe } from './synth.ts';
@@ -110,16 +111,11 @@ export class AudioEngine implements AudioPort {
     const AudioContextClass =
       window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AudioContextClass) return; // Navegador sin Web Audio: el juego sigue en silencio.
-    const ctx = new AudioContextClass();
-    const master = ctx.createGain();
-    master.gain.value = AUDIO_MIX.master;
-    master.connect(ctx.destination);
-    this.sfxBus = ctx.createGain();
-    this.sfxBus.gain.value = AUDIO_MIX.sfx;
-    this.sfxBus.connect(master);
-    this.musicBus = ctx.createGain();
-    this.musicBus.gain.value = this.settings.music ? AUDIO_MIX.music : 0;
-    this.musicBus.connect(master);
+    // 'balanced': un poco más de búfer que el mínimo, para que un tirón del juego no corte el audio con un clic.
+    const ctx = new AudioContextClass({ latencyHint: 'balanced' });
+    const { sfx, music } = createMix(ctx, this.settings.music);
+    this.sfxBus = sfx;
+    this.musicBus = music;
     this.noise = createNoiseBuffer(ctx);
     this.music = new MusicPlayer(ctx, this.musicBus, this.noise);
     this.ctx = ctx;

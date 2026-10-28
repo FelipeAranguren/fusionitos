@@ -40,21 +40,22 @@ export const MUSIC = {
   /** Arpegio de cada compás: índices sobre [raíz, tercera, quinta, raíz una octava arriba]. */
   arpPattern: [0, 1, 2, 3, 2, 1, 0, 1],
   arpOctave: 4,
-  /** Bajo: en qué paso suena, qué nota del acorde (0 raíz, 1 tercera, 2 quinta), en qué octava y cuántos pasos. */
+  /**
+   * Bajo: en qué paso suena, qué nota del acorde (0 raíz, 1 tercera, 2 quinta), en qué octava y cuántos pasos.
+   * Octava 3 (130–220 Hz): más grave satura los parlantes chicos. Por lo mismo, no hay bombo.
+   */
   bass: [
-    { step: 0, tone: 0, octave: 2, length: 3 },
-    { step: 4, tone: 2, octave: 2, length: 2 },
+    { step: 0, tone: 0, octave: 3, length: 3 },
+    { step: 4, tone: 2, octave: 3, length: 2 },
     { step: 6, tone: 0, octave: 3, length: 2 },
   ],
-  kickSteps: [0, 4],
-  hatSteps: [1, 3, 5, 7],
+  /** Shaker suave en los contratiempos: lleva el ritmo sin golpes secos. */
+  shaker: { steps: [1, 3, 5, 7], volume: 0.025, freq: 6500, duration: 0.06, attack: 0.012 },
   instruments: {
-    lead: { wave: 'triangle', volume: 0.2, attack: 0.012, release: 0.12 },
-    arp: { wave: 'sine', volume: 0.07, attack: 0.005, release: 0.22 },
-    bass: { wave: 'triangle', volume: 0.2, attack: 0.01, release: 0.1 },
+    lead: { wave: 'triangle', volume: 0.17, attack: 0.015, release: 0.12 },
+    arp: { wave: 'sine', volume: 0.06, attack: 0.008, release: 0.22 },
+    bass: { wave: 'triangle', volume: 0.16, attack: 0.012, release: 0.1 },
   },
-  kick: { volume: 0.26 },
-  hat: { volume: 0.03 },
   /** Eco sobre la melodía y el arpegio: le da aire. */
   echo: { delaySteps: 1.5, feedback: 0.28, wet: 0.22 },
 } as const satisfies {

@@ -63,6 +63,9 @@ src/main.ts   arma GameModel + SaveManager + Phaser.Game y conecta el guardado
 ### Configuración centralizada
 - Ningún número de balance fuera de `balance.ts`, ningún texto de UI fuera de `strings.ts`, ningún emoji de criatura fuera de `creatures.ts` y ningún sonido fuera de `sounds.ts` y `music.ts`.
 - Las escenas tocan sonidos con `ctx.audio.play('nombre')`. Un sonido nuevo se agrega como receta en `sounds.ts`, y el tipo `SoundName` lo valida.
+- **Nada por debajo de ~130 Hz:** sin bombos ni subgraves, porque saturan los parlantes chicos. Igual la salida los corta a 120 Hz (`src/audio/mix.ts`).
+- **No bajes el umbral del limitador:** el compresor de Web Audio sube el volumen general en proporción a lo que comprime.
+- Para medir picos y graves sin escuchar, renderizá con `OfflineAudioContext` usando `createMix` y `MusicPlayer.scheduleStep`.
 - El audio solo arranca después de un gesto del usuario (`main.ts` llama a `audio.unlock()`): no intentes reproducir antes ni lo trates como error.
 - Para cambiar un emoji por una imagen: poné el archivo en `public/assets/creatures/` y completá `image` en `creatures.ts`. Nada más.
 

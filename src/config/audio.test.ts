@@ -36,9 +36,13 @@ describe('partitura', () => {
 
   it('los patrones entran en el compás', () => {
     expect(MUSIC.arpPattern).toHaveLength(MUSIC.stepsPerBar);
-    for (const step of [...MUSIC.kickSteps, ...MUSIC.hatSteps, ...MUSIC.bass.map((b) => b.step)]) {
+    for (const step of [...MUSIC.shaker.steps, ...MUSIC.bass.map((b) => b.step)]) {
       expect(step).toBeGreaterThanOrEqual(0);
       expect(step).toBeLessThan(MUSIC.stepsPerBar);
     }
+  });
+
+  it('el bajo no baja de la octava 3 (más grave satura los parlantes chicos)', () => {
+    for (const bass of MUSIC.bass) expect(bass.octave).toBeGreaterThanOrEqual(3);
   });
 });

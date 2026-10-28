@@ -282,16 +282,20 @@ Todo se sintetiza en el navegador con Web Audio: no hay archivos de audio ni lic
 | Se levanta una criatura / se suelta sin fusionar | `pickUp` / `drop` |
 | Fusión en el mismo piso | arpegio (`merge`), 2 semitonos más agudo por cada tier |
 | Fusión que sube de piso | fanfarria (`levelUp`) |
-| Pulso de monedas | tintineo bajito (`coin`), con variación de tono y un mínimo de 110 ms entre dos |
+| Pulso de monedas | tintineo bajito y redondo (`coin`), con variación de tono y un mínimo de 220 ms entre dos |
 | Compra en la tienda | `purchase` (también aparece la criatura: `hatchPop`) |
 | Algo que no se puede (botón gris, piso bloqueado, merge rechazado) | `denied` |
 | Popup de criatura nueva / bienvenida | `discover` / `welcome` (cascada de monedas) |
 | Cambio de piso | `whoosh` |
 | Botones | `click` |
 
-- **Música:** loop original de 16 compases (I–vi–IV–V en Do mayor, 100 BPM, unos 38 s), con melodía, arpegio, bajo, un bombo y un hi-hat suaves, y eco sobre la melodía. Va bajita: acompaña sin tapar.
+- **Música:** loop original de 16 compases (I–vi–IV–V en Do mayor, 100 BPM, unos 38 s), con melodía, arpegio, bajo (octava 3), un shaker suave y eco sobre la melodía. No tiene bombo. Va bajita: acompaña sin tapar.
 - **Controles:** 🔊 apaga y prende los efectos y 🎵 la música (con fundido). Apagados se ven tachados.
 - **Preferencia:** se guarda aparte de la partida (`fusionitos.audio`), así que reiniciar el juego no la cambia.
 - **Reglas del navegador:** el audio arranca con el primer toque o tecla del jugador; antes, todo queda en silencio sin fallar.
 - **Pestaña oculta:** el audio se pausa, igual que el juego.
 - **Mezcla general:** `AUDIO_MIX` en `sounds.ts`.
+- **Cuidado de los parlantes:** toda la salida pasa por un corte de graves (por debajo de 120 Hz) y un limitador de seguridad.
+  - Los parlantes de celular y notebook no reproducen graves profundos: con un bombo de 45 Hz se saturaban y hacían un "tic" de chasquido. Por eso no hay bombo y ningún sonido baja de unos 130 Hz.
+  - Ataques de al menos 8 ms, para que nada empiece con un clic seco.
+  - Las notas nunca se programan en el pasado: si el juego se traba, se saltean.
