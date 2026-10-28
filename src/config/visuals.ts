@@ -8,14 +8,21 @@ export const GAME_HEIGHT = 1920;
 
 export const LAYOUT = {
   hud: { x: 24, y: 24, width: 1032, height: 250 },
-  field: { x: 36, y: 300, width: 1008, height: 1470 },
+  field: { x: 36, y: 300, width: 1008, height: 1350 },
   /** Margen interior del campo para el centro de las entidades (deja lugar al cuerpo y la sombra). */
   fieldInset: { left: 100, right: 100, top: 110, bottom: 90 },
   fieldRadius: 56,
   /** Sobre el borde superior del campo: así no tapa lo que está arriba del campo. */
   bannerY: 300,
-  toastY: 1665,
-  hintY: 1845,
+  toastY: 1580,
+  /** Pestañas de pisos, al pie. */
+  tabs: { top: 1668, height: 160, marginX: 24, gap: 12, radius: 34 },
+  hintY: 1876,
+} as const;
+
+/** Íconos de la interfaz que se generan desde emojis (los de criaturas están en creatures.ts). */
+export const ICONS = {
+  lock: '🔒',
 } as const;
 
 export const SIZES = {
@@ -29,6 +36,7 @@ export const SIZES = {
   dropRadius: 125,
   decor: 84,
   decorCount: 16,
+  decorAlpha: 0.35,
 } as const;
 
 export const WANDER = {
@@ -56,6 +64,8 @@ export const ANIM = {
   /** Espera antes del popup de descubrimiento, para que se vea la animación que lo causó. */
   discoveryDelayMs: 650,
   toastMs: 2300,
+  /** Fundido del campo al cambiar de piso (cada mitad). */
+  floorFadeMs: 140,
 } as const;
 
 export const DEPTH = {

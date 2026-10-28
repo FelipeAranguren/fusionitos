@@ -24,6 +24,8 @@ export interface FloorConfig {
   readonly pageColor: string;
   /** Emojis decorativos que se dibujan tenues sobre el campo. */
   readonly decor: readonly string[];
+  /** Opacidad de la decoración, si el fondo pide otra (en fondos oscuros, más). */
+  readonly decorAlpha?: number;
   /** Exactamente BALANCE.CREATURES_PER_FLOOR criaturas, de tier 1 a 6. */
   readonly creatures: readonly CreatureConfig[];
 }
@@ -81,7 +83,7 @@ export const FLOORS: readonly FloorConfig[] = [
     fieldColor: 0x5db3e6,
     accentColor: 0x1f6fa8,
     pageColor: '#0e2f4a',
-    decor: ['🐚', '🌊'],
+    decor: ['🐚', '🌿'],
     creatures: [
       { name: 'Pez', emoji: '🐠' },
       { name: 'Cangrejo', emoji: '🦀' },
@@ -97,6 +99,7 @@ export const FLOORS: readonly FloorConfig[] = [
     accentColor: 0xb39dff,
     pageColor: '#120b29',
     decor: ['⭐', '✨', '🌙'],
+    decorAlpha: 0.6,
     creatures: [
       { name: 'Bichito cósmico', emoji: '👾' },
       { name: 'Alien', emoji: '👽' },

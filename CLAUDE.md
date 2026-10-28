@@ -31,8 +31,9 @@ src/config/   datos y constantes, sin lógica
   strings.ts    todos los textos de la UI (en español)
 src/core/     lógica pura del juego: SIN Phaser, SIN DOM; testeada con Vitest
   GameModel.ts  fachada: estado + comandos (tick, hatch, merge, move, reset) + eventos
-src/scenes/   escenas Phaser: BootScene (texturas), GameScene (campo), UIScene (HUD y popups)
-src/view/     objetos visuales (CreatureView, EggView), efectos y widgets de UI
+src/scenes/   escenas Phaser: BootScene (texturas), GameScene (campo de un piso), UIScene (HUD, pestañas y popups)
+  context.ts    GameContext: modelo, bus de UI (`ui`: toast, selectFloor) y estado de la vista (`view.floor`)
+src/view/     objetos visuales (CreatureView, EggView), efectos y widgets de UI (Button, Modal, FloorTab…)
 src/main.ts   arma GameModel + SaveManager + Phaser.Game y conecta el guardado
 ```
 
@@ -43,6 +44,10 @@ src/main.ts   arma GameModel + SaveManager + Phaser.Game y conecta el guardado
 - La lógica aplica el cambio al instante; las animaciones son solo visuales y nunca bloquean al modelo.
 - El modelo guarda las posiciones **normalizadas** (0..1 dentro del campo). La conversión a píxeles se hace solo en `src/view/fieldSpace.ts`.
 - Las criaturas se dibujan por clave de textura (`creature-{n}`). `BootScene` genera esas texturas desde el emoji o carga `image` si está definida.
+- **Piso que se ve:**
+  - Es estado de la vista (`ctx.view.floor`), no del juego, así que no se guarda.
+  - Para cambiarlo, se emite `ui.emit('selectFloor', { floor })`. `GameScene` valida que esté desbloqueado y se reinicia con `scene.restart({ floor })`.
+  - Las escenas leen `view.floor` en `update()`.
 
 ### Configuración centralizada
 - Ningún número de balance fuera de `balance.ts`, ningún texto de UI fuera de `strings.ts` y ningún emoji de criatura fuera de `creatures.ts`.
@@ -55,6 +60,7 @@ src/main.ts   arma GameModel + SaveManager + Phaser.Game y conecta el guardado
 - **Sin enums, namespaces ni parameter properties** (`erasableSyntaxOnly`): usá uniones de literales u objetos `as const`.
 - **Imports relativos con extensión `.ts`** (`import { x } from './levels.ts'`). Así los scripts de `scripts/` corren directo con Node.
 - Nombres: `PascalCase` para clases y tipos, `camelCase` para funciones y variables, `UPPER_SNAKE_CASE` para constantes de config.
+- **Clases que extienden objetos de Phaser:** no declares campos con nombres que Phaser ya usa (`body`, `count`, `state`, `data`, `scene`, `type`, `name`, `input`…). Con `useDefineForClassFields` los pisás y Phaser se rompe sin avisar. Al reiniciar una escena, la instancia se reutiliza: reseteá sus campos en `init()`.
 - Comentarios cortos que expliquen el *porqué*, no el *qué*.
 
 ## Tests
@@ -76,9 +82,11 @@ src/main.ts   arma GameModel + SaveManager + Phaser.Game y conecta el guardado
 
 - En desarrollo existe `window.__debug` (no se incluye en el build), con:
   - `model` y `game`;
-  - `spawnEgg()` y `spawnCreature(level)` (aparece en el piso de su nivel);
-  - `entities()` y `buttons()`, con posiciones en píxeles de la página;
+  - `spawnEgg()` y `spawnCreature(level)` (aparece en el piso de su nivel y lo desbloquea);
+  - `selectFloor(floor)` y `currentFloor()` (pisos desde 0);
+  - `entities()` (las del piso que se ve) y `buttons()` (botones y pestañas `tab:N`), con posiciones en píxeles de la página;
   - `toPage(x, y)` y `clearSave()`.
 - Con el MCP de Playwright (`.mcp.json`): `npm run dev` y abrir http://localhost:5173.
   - Para arrastrar sobre el canvas, usá `page.mouse` (down / move con pasos / up) con las coordenadas de `__debug.entities()`.
+  - Las pruebas automáticas corren en un navegador headless aparte. El usuario suele jugar en la ventana visible de Playwright: no le cambies el viewport (`browser_resize` lo fija y rompe el ajuste y el zoom).
   - Las capturas van fuera del repo (`.playwright-mcp/` está en `.gitignore`).

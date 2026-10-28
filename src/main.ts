@@ -38,6 +38,7 @@ async function start(): Promise<void> {
   const ctx: GameContext = {
     model,
     ui,
+    view: { floor: 0 },
     saveNow: () => {
       if (saves.save(model.state) || warnedSaveFailure) return;
       warnedSaveFailure = true;
@@ -78,7 +79,7 @@ async function start(): Promise<void> {
 
   if (import.meta.env.DEV) {
     const { installDebugHooks } = await import('./debug.ts');
-    installDebugHooks(game, model, () => saves.clear());
+    installDebugHooks(game, ctx, () => saves.clear());
   }
 }
 

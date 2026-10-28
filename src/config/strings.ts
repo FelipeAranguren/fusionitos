@@ -21,6 +21,10 @@ export const STRINGS = {
   resetConfirm: 'Sí, reiniciar',
   resetCancel: 'Cancelar',
 
+  floorTab: (floor: number) => `Piso ${floor + 1}`,
+  floorLocked: (floor: number, creatureName: string) =>
+    `🔒 Para abrir el Piso ${floor + 1}: fusioná ${creatureName} + ${creatureName}`,
+  upperFloorHint: (floorBelow: number) => `Recibe criaturas de los merges del Piso ${floorBelow + 1}`,
   floorUnlocked: (floor: number, name: string) => `🔓 ¡Piso ${floor + 1} desbloqueado: ${name}!`,
   movedUp: (floor: number) => `⬆️ ¡Al Piso ${floor + 1}!`,
   floorFull: (floor: number) => `El Piso ${floor + 1} está lleno`,

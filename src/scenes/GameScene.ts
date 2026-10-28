@@ -24,16 +24,16 @@ export interface DebugView {
 
 /**
  * El campo de un piso: crea y destruye las vistas según los eventos del modelo,
- * maneja el arrastre y avanza el tiempo del juego.
+ * maneja el arrastre y avanza el tiempo del juego. Cambiar de piso reinicia la escena.
  */
 export class GameScene extends Phaser.Scene {
   private readonly ctx: GameContext;
-  /** F1: siempre el piso 1. La navegación entre pisos es de F2. */
-  private readonly floorIndex = 0;
+  private floorIndex = 0;
   private readonly creatures = new Map<EntityId, CreatureView>();
   private readonly eggs = new Map<EntityId, EggView>();
   private effects!: Effects;
   private dropTarget: CreatureView | null = null;
+  private switching = false;
   private unsubscribers: (() => void)[] = [];
 
   constructor(ctx: GameContext) {
@@ -41,14 +41,28 @@ export class GameScene extends Phaser.Scene {
     this.ctx = ctx;
   }
 
+  init(data: { floor?: number }): void {
+    this.floorIndex = data.floor ?? 0;
+    // La instancia se reutiliza al reiniciar: las vistas viejas ya las destruyó Phaser.
+    this.creatures.clear();
+    this.eggs.clear();
+    this.dropTarget = null;
+    this.switching = false;
+  }
+
   create(): void {
     const floor = floorConfig(this.floorIndex);
+    this.ctx.view.floor = this.floorIndex;
     this.cameras.main.setBackgroundColor(floor.pageColor);
+    // Los bordes de la página (escritorio) y la barra del navegador (celular) toman el color del piso.
+    document.body.style.backgroundColor = floor.pageColor;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', floor.pageColor);
     this.drawField(floor);
     this.effects = new Effects(this, floor.accentColor);
     this.setupDrag();
     this.subscribe();
     this.buildViews();
+    this.cameras.main.fadeIn(ANIM.floorFadeMs);
   }
 
   update(_time: number, delta: number): void {
@@ -85,7 +99,7 @@ export class GameScene extends Phaser.Scene {
         .image(field.x + 70 + rng() * (field.width - 140), field.y + 70 + rng() * (field.height - 140), decorTextureKey(emoji))
         .setDisplaySize(size, size)
         .setAngle((rng() - 0.5) * 40)
-        .setAlpha(0.35)
+        .setAlpha(floor.decorAlpha ?? SIZES.decorAlpha)
         .setDepth(-5);
     }
   }
@@ -110,12 +124,23 @@ export class GameScene extends Phaser.Scene {
         const view = floor === this.floorIndex ? this.creatures.get(entityId) : undefined;
         if (view && !view.isMerging) this.effects.coinPop(view.x, view.y - SIZES.creature * 0.6, amount);
       }),
-      events.on('stateReset', () => this.rebuild()),
+      // Al reiniciar, los pisos de arriba vuelven a bloquearse: se vuelve al piso 1.
+      events.on('stateReset', () => (this.floorIndex === 0 ? this.rebuild() : this.switchFloor(0))),
+      this.ctx.ui.on('selectFloor', ({ floor }) => this.switchFloor(floor)),
     ];
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       for (const unsubscribe of this.unsubscribers) unsubscribe();
       this.unsubscribers = [];
     });
+  }
+
+  /** Muestra otro piso (si está desbloqueado): fundido y la escena se reinicia con ese piso. */
+  private switchFloor(floor: number): void {
+    if (this.switching || floor === this.floorIndex || !this.ctx.model.isFloorUnlocked(floor)) return;
+    this.switching = true;
+    this.input.enabled = false;
+    this.cameras.main.fadeOut(ANIM.floorFadeMs, 0, 0, 0);
+    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.restart({ floor }));
   }
 
   private buildViews(): void {

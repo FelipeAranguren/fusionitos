@@ -35,6 +35,11 @@ export function hatchLevel(floor: number): number {
   return levelOf(floor, 1);
 }
 
+/** Criatura que hay que fusionar (dos iguales) para abrir un piso: el tier 6 del anterior. Null en el piso 1. */
+export function unlockRequirementLevel(floor: number): number | null {
+  return floor > 0 ? levelOf(floor - 1, BALANCE.CREATURES_PER_FLOOR) : null;
+}
+
 export function creatureConfig(level: number): CreatureConfig {
   const creature = FLOORS[floorOfLevel(level)]?.creatures[tierOfLevel(level) - 1];
   if (!isValidLevel(level) || !creature) throw new Error(`Nivel de criatura inválido: ${level}`);

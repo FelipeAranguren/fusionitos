@@ -16,6 +16,14 @@ export function isFloorUnlocked(state: DeepReadonly<GameState>, floor: number): 
   return floor === 0 || state.discovered.includes(hatchLevel(floor));
 }
 
+/** Próximo piso desbloqueado hacia arriba (1) o hacia abajo (−1), o null si no hay. */
+export function adjacentUnlockedFloor(state: DeepReadonly<GameState>, floor: number, direction: 1 | -1): number | null {
+  for (let candidate = floor + direction; candidate >= 0 && candidate < state.floors.length; candidate += direction) {
+    if (isFloorUnlocked(state, candidate)) return candidate;
+  }
+  return null;
+}
+
 export interface EntityLocation {
   floor: number;
   index: number;

@@ -36,7 +36,7 @@ Todo el catálogo vive en `src/config/creatures.ts`. Cada criatura es `{ name, e
 | 1 Jardín | verde claro | 🌼 🌱 🍀 | 🐛 Oruga | 🐌 Caracol | 🐜 Hormiga | 🐞 Vaquita | 🐝 Abeja | 🦋 Mariposa |
 | 2 Granja | trigo | 🌾 🌻 | 🐣 Pollito | 🐓 Gallo | 🐇 Conejo | 🐖 Chancho | 🐑 Oveja | 🐄 Vaca |
 | 3 Bosque | verde oscuro | 🌲 🍄 🍂 | 🦔 Erizo | 🐿️ Ardilla | 🦉 Búho | 🦡 Tejón | 🦌 Ciervo | 🐻 Oso |
-| 4 Océano | azul | 🐚 🌊 | 🐠 Pez | 🦀 Cangrejo | 🐙 Pulpo | 🐬 Delfín | 🦈 Tiburón | 🐋 Ballena |
+| 4 Océano | azul | 🐚 🌿 | 🐠 Pez | 🦀 Cangrejo | 🐙 Pulpo | 🐬 Delfín | 🦈 Tiburón | 🐋 Ballena |
 | 5 Galaxia | violeta | ⭐ ✨ 🌙 | 👾 Bichito cósmico | 👽 Alien | 🦄 Unicornio | 🐲 Dragoncito | 🐉 Dragón | 🌞 Sol viviente |
 
 - Los emojis son de Unicode ≤ 11, para que se vean en Windows, Android e iOS.
@@ -66,7 +66,7 @@ Todo el catálogo vive en `src/config/creatures.ts`. Cada criatura es `{ name, e
 - **Merge entre pisos:** si `n+1` pertenece al piso siguiente (tier 6 + tier 6):
   - La nueva criatura aparece en el **piso de arriba**, en un lugar libre al azar, y **desbloquea** ese piso si estaba bloqueado.
   - Si ese piso está **lleno**, el merge se **rechaza**: la criatura queda donde la soltaste y se avisa "El Piso X está lleno".
-  - En F1 (todavía sin navegación entre pisos) se muestra un aviso "¡Piso X desbloqueado!". La criatura nueva ya suma ingreso.
+  - Si el piso se desbloquea, aparece el aviso "¡Piso X desbloqueado!" y su pestaña late. La criatura nueva suma ingreso al instante, aunque no se esté viendo ese piso.
 - **Nivel 30:** no se fusiona; se avisa "¡Nivel máximo!".
 - **Monedas pendientes:** al fusionar, lo que las dos criaturas tenían acumulado para su próximo pulso se cobra en el momento, así que no se pierde nada.
 
@@ -162,25 +162,31 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
 
 ## 8. Pisos — FASE 2
 
-- **Navegación:** pestañas o flechas para cambiar de piso. Los pisos bloqueados se muestran con 🔒 y no se pueden abrir.
-- **Campos independientes:** cada piso desbloqueado tiene su propio campo con su color, sus criaturas y su capacidad de 12.
-- **Huevos:** caen solo en el piso 1.
-- **Ingreso:** todos los pisos generan ingreso aunque no se estén viendo.
+- **Pestañas:** una por piso, al pie de la pantalla.
+  - **Desbloqueada:** muestra la primera criatura del piso, su nombre y la ocupación ("7/12", en rojo si está lleno).
+  - **La del piso que se ve:** queda levantada y con borde blanco.
+  - **Bloqueada:** muestra 🔒 y "Piso N". Tocarla no cambia de piso: avisa qué hace falta ("Para abrir el Piso 3: fusioná Vaca + Vaca").
+- **Otras formas de cambiar:** en escritorio, las flechas ← y → del teclado van al piso desbloqueado anterior o siguiente.
+- **Cambio de piso:** el campo hace un fundido y se redibuja con el color, la decoración y las criaturas de ese piso. La página toma el color del piso.
+- **Campos independientes:** cada piso tiene su propio campo y su capacidad de 12. Las criaturas de cada piso se fusionan ahí; dos tier 6 suben al piso siguiente.
+- **Huevos:** caen solo en el piso 1, también mientras se mira otro piso. En los demás pisos, la fila del huevo del HUD se reemplaza por "Recibe criaturas de los merges del Piso N".
+- **Ingreso:** todos los pisos generan ingreso aunque no se estén viendo; los "+X" se ven solo en el piso que está en pantalla.
+- **Avisos:** cuando llega una criatura a un piso que no se está viendo, su pestaña late.
+- **Al recargar** se vuelve al piso 1. El piso que se mira es estado de la vista, no se guarda.
+- **Al reiniciar** se vuelve al piso 1 y los demás se bloquean.
 
-> La lógica (estado por piso, capacidad por piso, merge entre pisos) ya está en F1. F2 agrega solo la vista y la navegación.
-
-## 9. Interfaz — FASE 1
+## 9. Interfaz — FASES 1 y 2
 
 - **Barra superior:**
   - monedas con un ícono de moneda y el ingreso total "+X/s";
-  - la barra de progreso del próximo huevo y la capacidad "7/12";
-  - el nombre del piso;
-  - el botón **Reiniciar**.
+  - el nombre del piso que se ve y el botón **Reiniciar**;
+  - en el piso 1, la barra del próximo huevo; en los demás, de dónde llegan sus criaturas;
+  - la capacidad del piso que se ve ("7/12").
 - **Campo:** fondo del color del piso con decoración tenue.
-- **Banner** "¡Campo lleno!" mientras no quede lugar.
-- **Popups:** "¡Nueva criatura descubierta!" y la confirmación de reinicio. Mientras están abiertos, bloquean el campo.
-- **Toasts:** avisos cortos ("¡Piso 2 desbloqueado!", "El Piso 2 está lleno", "¡Nivel máximo!").
-- **Pie:** una pista de cómo jugar. Más adelante va a alojar la navegación entre pisos (F2) y la tienda (F3).
+- **Banner** "¡Campo lleno!" mientras no quede lugar en el piso que se ve.
+- **Popups:** "¡Nueva criatura descubierta!" y la confirmación de reinicio. Mientras están abiertos, bloquean el campo, las pestañas y el teclado.
+- **Toasts:** avisos cortos ("¡Piso 2 desbloqueado!", "El Piso 2 está lleno", "¡Nivel máximo!", qué abre un piso bloqueado).
+- **Pie:** las pestañas de pisos (F2) y una pista de cómo jugar. Más adelante va a alojar la tienda (F3).
 
 ## 10. Guardado — FASE 1
 
@@ -237,9 +243,9 @@ Las constantes visuales (tamaños, velocidades de deambular, duraciones de anima
 - [x] Guardado automático, al cerrar, y reinicio con confirmación.
 - [x] Tests unitarios de merge y economía.
 
-### FASE 2 — pisos
-- [ ] Pestañas o flechas para cambiar de piso; pisos bloqueados con candado.
-- [ ] Vista del campo propio de cada piso (colores y decoración).
+### FASE 2 — pisos ✅
+- [x] Pestañas (y flechas del teclado) para cambiar de piso; pisos bloqueados con candado y aviso de qué los abre.
+- [x] Vista del campo propio de cada piso (colores y decoración), con su capacidad en el HUD y en la pestaña.
 
 ### FASE 3 — tienda y offline
 - [ ] Tienda con precio creciente y restricción de nivel.

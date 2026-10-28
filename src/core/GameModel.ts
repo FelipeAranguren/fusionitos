@@ -3,7 +3,15 @@ import { isDiscovered, markDiscovered, maxDiscoveredLevel } from './discovery.ts
 import { tickIncome, totalIncomePerSecond, type CoinPop } from './economy.ts';
 import { hatchEgg, spawnEgg, tickEggs } from './eggs.ts';
 import { Emitter } from './emitter.ts';
-import { clamp01, findEntity, findSpawnPosition, floorEntityCount, isFloorFull, isFloorUnlocked } from './field.ts';
+import {
+  adjacentUnlockedFloor,
+  clamp01,
+  findEntity,
+  findSpawnPosition,
+  floorEntityCount,
+  isFloorFull,
+  isFloorUnlocked,
+} from './field.ts';
 import { floorOfLevel, isValidLevel } from './levels.ts';
 import { mergeCreatures, type MergeResult } from './merge.ts';
 import type { Rng } from './rng.ts';
@@ -73,6 +81,10 @@ export class GameModel {
 
   isFloorUnlocked(floor: number): boolean {
     return isFloorUnlocked(this.current, floor);
+  }
+
+  adjacentUnlockedFloor(floor: number, direction: 1 | -1): number | null {
+    return adjacentUnlockedFloor(this.current, floor, direction);
   }
 
   isDiscovered(level: number): boolean {

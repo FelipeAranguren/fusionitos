@@ -1,6 +1,6 @@
 import type Phaser from 'phaser';
 import { EGG, FLOORS } from '../config/creatures.ts';
-import { EMOJI_FONT_FAMILY, SIZES } from '../config/visuals.ts';
+import { EMOJI_FONT_FAMILY, ICONS, SIZES } from '../config/visuals.ts';
 import { MAX_LEVEL, creatureConfig } from '../core/levels.ts';
 
 /**
@@ -12,6 +12,7 @@ export const TEXTURES = {
   coin: 'coin',
   spark: 'spark',
   shell: 'shell',
+  lock: 'lock',
 } as const;
 
 export const creatureTextureKey = (level: number): string => `creature-${level}`;
@@ -32,6 +33,7 @@ export function generateTextures(scene: Phaser.Scene): void {
     createEmojiTexture(scene, creatureTextureKey(level), creatureConfig(level).emoji, SIZES.emojiTexture, SIZES.emojiOutline);
   }
   createEmojiTexture(scene, TEXTURES.egg, EGG.emoji, SIZES.emojiTexture, SIZES.emojiOutline);
+  createEmojiTexture(scene, TEXTURES.lock, ICONS.lock, 128, 4);
   for (const emoji of new Set(FLOORS.flatMap((floor) => floor.decor))) {
     createEmojiTexture(scene, decorTextureKey(emoji), emoji, 128, 0);
   }

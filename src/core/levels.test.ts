@@ -8,6 +8,7 @@ import {
   levelOf,
   mergeResultLevel,
   tierOfLevel,
+  unlockRequirementLevel,
 } from './levels.ts';
 
 describe('niveles y pisos', () => {
@@ -39,6 +40,13 @@ describe('niveles y pisos', () => {
     expect(hatchLevel(0)).toBe(1);
     expect(hatchLevel(1)).toBe(7);
     expect(hatchLevel(4)).toBe(25);
+  });
+
+  it('cada piso se abre fusionando el tier 6 del anterior', () => {
+    expect(unlockRequirementLevel(0)).toBeNull();
+    expect(unlockRequirementLevel(1)).toBe(6);
+    expect(unlockRequirementLevel(4)).toBe(24);
+    expect(creatureConfig(6).name).toBe('Mariposa');
   });
 
   it('creatureConfig devuelve la criatura del catálogo y rechaza niveles inválidos', () => {
