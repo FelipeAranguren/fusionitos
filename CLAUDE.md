@@ -21,6 +21,13 @@ Juego web *merge idle* de un jugador, para escritorio y celular. Usa Phaser 3.90
 
 Antes de dar algo por terminado: `npm test` y `npm run build` sin errores.
 
+## Publicación
+
+- Cada push a `master` corre `.github/workflows/deploy.yml`: `npm ci`, `npm test` y `npm run build`, y publica `dist/` en GitHub Pages: https://felipearanguren.github.io/fusionitos/ (repo `FelipeAranguren/fusionitos`).
+- Si los tests fallan, no se publica.
+- Pages sirve el juego en una subcarpeta (`/fusionitos/`): por eso el build usa rutas relativas (`base: './'` en `vite.config.ts`). No lo cambies.
+- Pushear publica. Hacelo solo cuando se pida.
+
 ## Arquitectura
 
 ```

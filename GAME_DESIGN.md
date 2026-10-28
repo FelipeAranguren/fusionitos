@@ -12,6 +12,7 @@ El objetivo es descubrir las 30 criaturas, subiendo de piso en piso.
 - **Plataforma:** navegador, en escritorio y celular. Se juega con mouse o con el dedo.
 - **Stack:** Phaser 3 (3.90) + TypeScript + Vite. Tests con Vitest. Sin backend: el progreso se guarda en `localStorage`.
 - **Pantalla:** vertical, con una resolución lógica de 1080×1920 escalada con `FIT`. En escritorio se ve como una columna centrada.
+- **Publicado en:** https://felipearanguren.github.io/fusionitos/ (GitHub Pages; se actualiza solo con cada push a `master`).
 
 ## 2. Conceptos
 
