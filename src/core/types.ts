@@ -37,6 +37,8 @@ export interface GameState {
   /** Progreso hacia el próximo huevo. */
   eggTimerMs: number;
   nextId: EntityId;
+  /** Compras hechas en la tienda por nivel: purchases[n − 1] (sube el precio). */
+  purchases: number[];
 }
 
 /** Vista de solo lectura (profunda) del estado, para quien no debe mutarlo. */

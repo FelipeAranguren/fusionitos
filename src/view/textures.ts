@@ -13,6 +13,7 @@ export const TEXTURES = {
   spark: 'spark',
   shell: 'shell',
   lock: 'lock',
+  shop: 'shop',
 } as const;
 
 export const creatureTextureKey = (level: number): string => `creature-${level}`;
@@ -34,6 +35,7 @@ export function generateTextures(scene: Phaser.Scene): void {
   }
   createEmojiTexture(scene, TEXTURES.egg, EGG.emoji, SIZES.emojiTexture, SIZES.emojiOutline);
   createEmojiTexture(scene, TEXTURES.lock, ICONS.lock, 128, 4);
+  createEmojiTexture(scene, TEXTURES.shop, ICONS.shop, 128, 4);
   for (const emoji of new Set(FLOORS.flatMap((floor) => floor.decor))) {
     createEmojiTexture(scene, decorTextureKey(emoji), emoji, 128, 0);
   }

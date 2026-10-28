@@ -2,13 +2,13 @@
  * Imprime la tabla de niveles de GAME_DESIGN.md §7.5, calculada con el código real.
  * Uso: npm run design:tables (Node ≥ 22.18 ejecuta TypeScript sin compilar).
  */
-import { BALANCE } from '../src/config/balance.ts';
 import { incomePerSecond, payoutAmount } from '../src/core/economy.ts';
 import { formatNumber } from '../src/core/format.ts';
 import { MAX_LEVEL, creatureConfig, floorConfig, floorOfLevel, tierOfLevel } from '../src/core/levels.ts';
+import { creaturePrice } from '../src/core/shop.ts';
 
-// FASE 3: cuando exista la tienda, usar su función de precio en lugar de esta.
-const basePrice = (level: number): number => BALANCE.SHOP_BASE_PRICE * BALANCE.SHOP_PRICE_GROWTH ** (level - 1);
+/** Precio de la primera compra (sin compras previas). */
+const basePrice = (level: number): number => creaturePrice(level, 0);
 
 function formatDuration(seconds: number): string {
   if (seconds < 60) return `${Math.round(seconds)} s`;

@@ -9,7 +9,8 @@ import { TEXTURES } from '../view/textures.ts';
 import { Button } from '../view/ui/Button.ts';
 import { FloorTab } from '../view/ui/FloorTab.ts';
 import type { Modal } from '../view/ui/Modal.ts';
-import { openConfirmPopup, openDiscoveryPopup } from '../view/ui/popups.ts';
+import { openConfirmPopup, openDiscoveryPopup, openWelcomePopup } from '../view/ui/popups.ts';
+import { ShopPopup } from '../view/ui/ShopPopup.ts';
 import { textStyle } from '../view/ui/textStyle.ts';
 import { ToastQueue } from '../view/ui/Toast.ts';
 import type { GameContext } from './context.ts';
@@ -46,6 +47,7 @@ export class UIScene extends Phaser.Scene {
   private tabs: FloorTab[] = [];
   private toasts!: ToastQueue;
   private modal: Modal | null = null;
+  private shop: ShopPopup | null = null;
   private readonly discoveryQueue: number[] = [];
   private unsubscribers: (() => void)[] = [];
   private shown!: Shown;
@@ -61,9 +63,19 @@ export class UIScene extends Phaser.Scene {
     this.createBanner();
     this.tabs = FLOORS.map((_, floor) => new FloorTab(this, floor, (selected) => this.onTabSelected(selected)));
     this.add
-      .text(GAME_WIDTH / 2, LAYOUT.hintY, STRINGS.hint, textStyle({ size: 32, weight: 500, stroke: false }))
-      .setOrigin(0.5)
+      .text(LAYOUT.hintX, LAYOUT.hintY, STRINGS.hint, textStyle({ size: 32, weight: 500, stroke: false, align: 'left' }))
+      .setOrigin(0, 0.5)
       .setAlpha(0.8);
+    const { resetButton } = LAYOUT;
+    new Button(this, resetButton.x, LAYOUT.hintY, {
+      label: STRINGS.reset,
+      width: resetButton.width,
+      height: resetButton.height,
+      color: COLORS.neutral,
+      fontSize: 30,
+      name: 'reset',
+      onClick: () => this.confirmReset(),
+    });
     this.toasts = new ToastQueue(this);
     this.input.keyboard?.on('keydown-LEFT', () => this.stepFloor(-1));
     this.input.keyboard?.on('keydown-RIGHT', () => this.stepFloor(1));
@@ -90,6 +102,11 @@ export class UIScene extends Phaser.Scene {
   update(): void {
     const { model, view } = this.ctx;
     const shown = this.shown;
+    this.shop?.refresh();
+    if (view.welcome && !this.modal) {
+      this.modal = openWelcomePopup(this, view.welcome, () => this.onModalClosed());
+      view.welcome = null;
+    }
     const floor = view.floor;
     const floorChanged = floor !== shown.floor;
     if (floorChanged) {
@@ -149,8 +166,9 @@ export class UIScene extends Phaser.Scene {
     const buttons: { label: string; x: number; y: number }[] = [];
     const visit = (objects: Phaser.GameObjects.GameObject[]) => {
       for (const object of objects) {
-        const label = object instanceof Button ? object.label : object instanceof FloorTab ? `tab:${object.floor + 1}` : null;
-        if (label && object instanceof Phaser.GameObjects.Container && object.input?.enabled) {
+        const label =
+          object instanceof Button ? object.name || object.label : object instanceof FloorTab ? `tab:${object.floor + 1}` : null;
+        if (label && object instanceof Phaser.GameObjects.Container && object.visible && object.input?.enabled) {
           const bounds = object.getBounds();
           buttons.push({ label, x: bounds.centerX, y: bounds.centerY });
         }
@@ -176,12 +194,14 @@ export class UIScene extends Phaser.Scene {
       .setOrigin(0, 0.5);
 
     new Button(this, right - 125, hud.y + 72, {
-      label: STRINGS.reset,
+      label: STRINGS.shop,
       width: 250,
       height: 88,
-      color: COLORS.neutral,
+      color: COLORS.primary,
       fontSize: 38,
-      onClick: () => this.confirmReset(),
+      icon: TEXTURES.shop,
+      name: 'shop',
+      onClick: () => this.openShop(),
     });
     this.floorText = this.add.text(right, hud.y + 142, '', textStyle({ size: 38, align: 'right' })).setOrigin(1, 0.5);
 
@@ -262,6 +282,16 @@ export class UIScene extends Phaser.Scene {
     const level = this.discoveryQueue.shift();
     if (level === undefined) return;
     this.modal = openDiscoveryPopup(this, level, () => this.onModalClosed());
+  }
+
+  /** La tienda del piso que se ve. */
+  private openShop(): void {
+    if (this.modal) return;
+    this.shop = new ShopPopup(this, this.ctx.model, this.ctx.view.floor, () => {
+      this.shop = null;
+      this.onModalClosed();
+    });
+    this.modal = this.shop.modal;
   }
 
   private confirmReset(): void {

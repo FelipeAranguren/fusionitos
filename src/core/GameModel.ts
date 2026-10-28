@@ -1,6 +1,6 @@
 import { BALANCE } from '../config/balance.ts';
 import { isDiscovered, markDiscovered, maxDiscoveredLevel } from './discovery.ts';
-import { tickIncome, totalIncomePerSecond, type CoinPop } from './economy.ts';
+import { offlineEarnings, tickIncome, totalIncomePerSecond, type CoinPop, type OfflineEarnings } from './economy.ts';
 import { hatchEgg, spawnEgg, tickEggs } from './eggs.ts';
 import { Emitter } from './emitter.ts';
 import {
@@ -15,6 +15,14 @@ import {
 import { floorOfLevel, isValidLevel } from './levels.ts';
 import { mergeCreatures, type MergeResult } from './merge.ts';
 import type { Rng } from './rng.ts';
+import {
+  buyCreature,
+  checkPurchase,
+  maxBuyableLevel,
+  priceOf,
+  type PurchaseCheck,
+  type PurchaseResult,
+} from './shop.ts';
 import { allocateId, createInitialState } from './state.ts';
 import type { Creature, DeepReadonly, Egg, EntityId, GameState } from './types.ts';
 
@@ -28,7 +36,7 @@ export interface GameEvents {
     created: Readonly<Creature>;
     createdFloor: number;
   };
-  /** Una criatura apareció por otra vía que no es huevo ni merge (hoy: debug; en F3: compras). */
+  /** Una criatura apareció por otra vía que no es huevo ni merge: una compra (o el debug). */
   creatureAdded: { floor: number; creature: Readonly<Creature> };
   coinsPopped: CoinPop;
   creatureDiscovered: { level: number };
@@ -123,6 +131,33 @@ export class GameModel {
     return result;
   }
 
+  /** Nivel más alto que vende la tienda (0 si ninguno). */
+  get maxBuyableLevel(): number {
+    return maxBuyableLevel(this.current);
+  }
+
+  priceOf(level: number): number {
+    return priceOf(this.current, level);
+  }
+
+  checkPurchase(level: number): PurchaseCheck {
+    return checkPurchase(this.current, level);
+  }
+
+  /** Compra en la tienda: la criatura aparece en su piso (evento creatureAdded). */
+  buy(level: number): PurchaseResult {
+    const result = buyCreature(this.current, level, this.rng);
+    if (result.ok) this.events.emit('creatureAdded', { floor: result.floor, creature: result.creature });
+    return result;
+  }
+
+  /** Suma el ingreso offline de una ausencia. Devuelve el resumen para mostrar, o null si no corresponde. */
+  applyOfflineEarnings(awayMs: number): OfflineEarnings | null {
+    const earnings = offlineEarnings(this.current, awayMs);
+    if (earnings) this.current.coins += earnings.amount;
+    return earnings;
+  }
+
   /** Actualiza la posición normalizada de una entidad (la vista la llama al terminar un movimiento). */
   move(id: EntityId, x: number, y: number): void {
     const location = findEntity(this.current, id);
@@ -143,6 +178,10 @@ export class GameModel {
     const egg = spawnEgg(this.current, floor, this.rng);
     if (egg) this.events.emit('eggSpawned', { floor, egg });
     return egg;
+  }
+
+  debugAddCoins(amount: number): void {
+    if (Number.isFinite(amount) && amount > 0) this.current.coins += amount;
   }
 
   /** Agrega una criatura en su piso, si hay lugar. La marca descubierta sin popup. */

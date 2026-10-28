@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { incomePerSecond, payoutAmount, pendingCoins, tickIncome, totalIncomePerSecond } from './economy.ts';
+import {
+  incomePerSecond,
+  offlineEarnings,
+  payoutAmount,
+  pendingCoins,
+  tickIncome,
+  totalIncomePerSecond,
+} from './economy.ts';
 import { MAX_LEVEL } from './levels.ts';
 import { addCreature, addEgg, emptyState } from './test-helpers.ts';
 
@@ -43,6 +50,38 @@ describe('ingreso total', () => {
 
   it('un campo vacío no produce nada', () => {
     expect(totalIncomePerSecond(emptyState())).toBe(0);
+  });
+});
+
+describe('ingreso offline', () => {
+  const HOUR = 3_600_000;
+
+  it('es el 50 % del ingreso por el tiempo de ausencia', () => {
+    const state = emptyState();
+    addCreature(state, 2); // 2.5/s
+    expect(offlineEarnings(state, HOUR)).toEqual({ amount: 0.5 * 2.5 * 3600, awayMs: HOUR, countedMs: HOUR });
+  });
+
+  it('cuenta como máximo 4 horas', () => {
+    const state = emptyState();
+    addCreature(state, 1);
+    const earnings = offlineEarnings(state, 10 * HOUR);
+    expect(earnings).toEqual({ amount: 0.5 * 1 * 4 * 3600, awayMs: 10 * HOUR, countedMs: 4 * HOUR });
+  });
+
+  it('una ausencia de menos de un minuto no cuenta', () => {
+    const state = emptyState();
+    addCreature(state, 1);
+    expect(offlineEarnings(state, 59_999)).toBeNull();
+    expect(offlineEarnings(state, 60_000)?.amount).toBe(30);
+  });
+
+  it('sin criaturas, o con tiempos inválidos, no hay nada', () => {
+    const state = emptyState();
+    expect(offlineEarnings(state, HOUR)).toBeNull();
+    addCreature(state, 1);
+    expect(offlineEarnings(state, -HOUR)).toBeNull();
+    expect(offlineEarnings(state, Number.NaN)).toBeNull();
   });
 });
 

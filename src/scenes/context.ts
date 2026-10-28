@@ -1,3 +1,4 @@
+import type { OfflineEarnings } from '../core/economy.ts';
 import type { Emitter } from '../core/emitter.ts';
 import type { GameModel } from '../core/GameModel.ts';
 
@@ -8,10 +9,12 @@ export interface UiEvents {
   selectFloor: { floor: number };
 }
 
-/** Estado de la vista compartido entre escenas. No se guarda: al recargar se vuelve al piso 1. */
+/** Estado de la vista compartido entre escenas. No se guarda. */
 export interface ViewState {
-  /** Piso que muestra el campo ahora. */
+  /** Piso que muestra el campo ahora (al recargar, el 1). */
   floor: number;
+  /** Ingreso offline ya sumado que falta mostrar; la UIScene abre el popup y lo limpia. */
+  welcome: OfflineEarnings | null;
 }
 
 /** Lo que main.ts le pasa a las escenas por constructor (sin variables globales). */

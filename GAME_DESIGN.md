@@ -110,8 +110,14 @@ precio(n, k) = SHOP_BASE_PRICE × SHOP_PRICE_GROWTH^(n−1) × SHOP_PURCHASE_GRO
 ```
 
 - Solo se pueden comprar criaturas hasta **2 niveles por debajo** de la máxima descubierta (`n ≤ maxDescubierto − 2`).
-- La criatura comprada aparece en el campo de **su** piso y respeta la capacidad.
+- La criatura comprada aparece en el campo de **su** piso, en un lugar libre y con un "pop". Respeta la capacidad.
 - **Repago** de la primera compra: `precio/ingreso = 15 × 1.2^(n−1)` segundos (de 15 s en n=1 a ~34 min en n=28, el máximo comprable).
+- **Interfaz:** el botón **🛒 Tienda** del HUD abre la tienda **del piso que se ve**, con una fila por cada criatura de ese piso:
+  - **sin descubrir:** silueta, "???" y 🔒 (no arruina la sorpresa);
+  - **descubierta pero todavía no a la venta:** aparece apagada, con "🔒 Descubrí N más";
+  - **a la venta:** nombre, ingreso por segundo y un botón con el precio. El botón se pone gris si no alcanzan las monedas o si el piso está lleno; en ese caso, la tienda avisa "¡Piso lleno! Fusioná para hacer lugar".
+- La tienda queda abierta para comprar varias veces seguidas. Los precios y los botones se actualizan solos a medida que entran monedas.
+- Las compras se guardan por nivel (`purchases`) y suben solo el precio de esa criatura.
 
 ### 7.4 Ingreso offline — FASE 3
 
@@ -120,8 +126,11 @@ offline = OFFLINE_INCOME_RATE × ingresoTotal × min(tiempoAusente, OFFLINE_MAX_
         = 50 % del ingreso, con un máximo de 4 horas
 ```
 
-- Se calcula al volver al juego, usando `savedAt` del guardado.
-- Se muestra en un popup de bienvenida.
+- **Cuándo se calcula:**
+  - **al abrir el juego:** por el tiempo desde `savedAt` del guardado;
+  - **al volver a la pestaña:** por el tiempo que estuvo oculta. Con la pestaña oculta el juego está en pausa, y mientras tanto los guardados quedan fechados en el momento en que se ocultó; así, si después se cierra, la ausencia se cuenta entera.
+- **Mínimo:** las ausencias de menos de **60 s** (`OFFLINE_MIN_SECONDS`) no cuentan; una recarga no da bienvenida. Sin criaturas tampoco hay nada que cobrar.
+- **Popup "¡Hola de nuevo!":** muestra cuánto tiempo pasó ("Estuviste afuera 2 h 15 min."), cuánto juntaron las criaturas y la regla (50 %, hasta 4 h). Las monedas ya están sumadas cuando aparece.
 
 ### 7.5 Tabla de niveles
 
@@ -175,31 +184,32 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
 - **Al recargar** se vuelve al piso 1. El piso que se mira es estado de la vista, no se guarda.
 - **Al reiniciar** se vuelve al piso 1 y los demás se bloquean.
 
-## 9. Interfaz — FASES 1 y 2
+## 9. Interfaz — FASES 1 a 3
 
 - **Barra superior:**
   - monedas con un ícono de moneda y el ingreso total "+X/s";
-  - el nombre del piso que se ve y el botón **Reiniciar**;
+  - el nombre del piso que se ve y el botón **🛒 Tienda**;
   - en el piso 1, la barra del próximo huevo; en los demás, de dónde llegan sus criaturas;
   - la capacidad del piso que se ve ("7/12").
 - **Campo:** fondo del color del piso con decoración tenue.
 - **Banner** "¡Campo lleno!" mientras no quede lugar en el piso que se ve.
-- **Popups:** "¡Nueva criatura descubierta!" y la confirmación de reinicio. Mientras están abiertos, bloquean el campo, las pestañas y el teclado.
+- **Popups:** "¡Nueva criatura descubierta!", la tienda, la bienvenida tras una ausencia y la confirmación de reinicio. Se muestran de a uno y, mientras están abiertos, bloquean el campo, las pestañas y el teclado.
 - **Toasts:** avisos cortos ("¡Piso 2 desbloqueado!", "El Piso 2 está lleno", "¡Nivel máximo!", qué abre un piso bloqueado).
-- **Pie:** las pestañas de pisos (F2) y una pista de cómo jugar. Más adelante va a alojar la tienda (F3).
+- **Pie:** las pestañas de pisos y, debajo, una pista de cómo jugar y el botón **Reiniciar** (abajo, para no tocarlo sin querer).
 
 ## 10. Guardado — FASE 1
 
 - Se guarda en `localStorage`, en la clave `fusionitos.save`, como JSON versionado: `{ version, savedAt, state }`.
 - **Cuándo se guarda:** autoguardado cada **10 s**, y también al ocultar la pestaña (`visibilitychange`), al cerrarla (`pagehide` / `beforeunload`) y justo después de reiniciar.
-- **Qué se guarda:**
+- **Qué se guarda (versión 2):**
   - las monedas y el progreso del próximo huevo;
   - las entidades de cada piso, con posición **normalizada** (0..1 dentro del campo) y el progreso de su pulso;
-  - las criaturas descubiertas y el próximo id.
+  - las criaturas descubiertas, el próximo id y las compras por nivel (`purchases`, desde v2);
+  - `savedAt`: el último momento en que el juego corrió (base del ingreso offline).
 - **Validación al cargar:**
   - Los valores fuera de rango se corrigen y las entidades inválidas se descartan.
   - Si el JSON está corrupto o la versión es desconocida, se copia a `fusionitos.save.corrupt` y el juego arranca de cero, sin romperse.
-- **Migraciones:** si cambia el formato, se sube `SAVE_VERSION` y se agrega una migración.
+- **Migraciones:** si cambia el formato, se sube `SAVE_VERSION` y se agrega una migración. v1 → v2 agrega las compras vacías; un guardado de F1/F2 carga sin perder nada.
 - **Si `localStorage` falla** (modo privado, cuota llena), el juego sigue funcionando sin guardar.
 - **Reiniciar:** botón con un popup de confirmación. Borra todo y empieza de cero.
 
@@ -220,12 +230,13 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
 | `COIN_POP_INTERVAL_MS` | 3000 | Cada cuánto suelta monedas una criatura. |
 | `MAX_TICK_MS` | 1000 | Tope de tiempo simulado por frame (evita saltos). |
 | `AUTOSAVE_INTERVAL_MS` | 10000 | Autoguardado. |
-| `SHOP_BASE_PRICE` | 15 | F3 · precio del nivel 1. |
-| `SHOP_PRICE_GROWTH` | 3 | F3 · factor de precio por nivel. |
-| `SHOP_PURCHASE_GROWTH` | 1.15 | F3 · encarecimiento por compra. |
-| `SHOP_LEVELS_BELOW_MAX` | 2 | F3 · distancia mínima a la máxima descubierta. |
-| `OFFLINE_INCOME_RATE` | 0.5 | F3 · fracción del ingreso offline. |
-| `OFFLINE_MAX_HOURS` | 4 | F3 · tope del ingreso offline. |
+| `SHOP_BASE_PRICE` | 15 | Tienda · precio del nivel 1. |
+| `SHOP_PRICE_GROWTH` | 3 | Tienda · factor de precio por nivel. |
+| `SHOP_PURCHASE_GROWTH` | 1.15 | Tienda · encarecimiento por compra. |
+| `SHOP_LEVELS_BELOW_MAX` | 2 | Tienda · distancia mínima a la máxima descubierta. |
+| `OFFLINE_INCOME_RATE` | 0.5 | Offline · fracción del ingreso. |
+| `OFFLINE_MAX_HOURS` | 4 | Offline · tope de la ausencia que cuenta. |
+| `OFFLINE_MIN_SECONDS` | 60 | Offline · ausencia mínima para que cuente. |
 
 Las constantes visuales (tamaños, velocidades de deambular, duraciones de animación) están en `src/config/visuals.ts`, y los textos en `src/config/strings.ts`.
 
@@ -247,9 +258,10 @@ Las constantes visuales (tamaños, velocidades de deambular, duraciones de anima
 - [x] Pestañas (y flechas del teclado) para cambiar de piso; pisos bloqueados con candado y aviso de qué los abre.
 - [x] Vista del campo propio de cada piso (colores y decoración), con su capacidad en el HUD y en la pestaña.
 
-### FASE 3 — tienda y offline
-- [ ] Tienda con precio creciente y restricción de nivel.
-- [ ] Ingreso offline con popup de bienvenida.
+### FASE 3 — tienda y offline ✅
+- [x] Tienda por piso con precio creciente, restricción de nivel y avisos de qué falta.
+- [x] Ingreso offline (al abrir el juego y al volver a la pestaña) con popup de bienvenida.
+- [x] Guardado v2 con migración desde v1.
 
 ### Ideas futuras (sin fase asignada)
 Sonido y música, arte definitivo para las 30 criaturas, más pisos, logros, tutorial guiado y PWA instalable.

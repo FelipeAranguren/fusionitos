@@ -27,6 +27,25 @@ export function totalIncomePerSecond(state: DeepReadonly<GameState>): number {
   return total;
 }
 
+export interface OfflineEarnings {
+  amount: number;
+  /** Tiempo real de ausencia. */
+  awayMs: number;
+  /** Tiempo que se tomó en cuenta (con el tope). */
+  countedMs: number;
+}
+
+/**
+ * Ingreso offline = OFFLINE_INCOME_RATE × ingreso total × min(ausencia, OFFLINE_MAX_HOURS).
+ * Null si la ausencia es más corta que OFFLINE_MIN_SECONDS o si no hay nada que produzca.
+ */
+export function offlineEarnings(state: DeepReadonly<GameState>, awayMs: number): OfflineEarnings | null {
+  if (!Number.isFinite(awayMs) || awayMs < BALANCE.OFFLINE_MIN_SECONDS * 1000) return null;
+  const countedMs = Math.min(awayMs, BALANCE.OFFLINE_MAX_HOURS * 3_600_000);
+  const amount = BALANCE.OFFLINE_INCOME_RATE * totalIncomePerSecond(state) * (countedMs / 1000);
+  return amount > 0 ? { amount, awayMs, countedMs } : null;
+}
+
 export interface CoinPop {
   floor: number;
   entityId: EntityId;

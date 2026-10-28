@@ -32,8 +32,8 @@ src/config/   datos y constantes, sin lógica
 src/core/     lógica pura del juego: SIN Phaser, SIN DOM; testeada con Vitest
   GameModel.ts  fachada: estado + comandos (tick, hatch, merge, move, reset) + eventos
 src/scenes/   escenas Phaser: BootScene (texturas), GameScene (campo de un piso), UIScene (HUD, pestañas y popups)
-  context.ts    GameContext: modelo, bus de UI (`ui`: toast, selectFloor) y estado de la vista (`view.floor`)
-src/view/     objetos visuales (CreatureView, EggView), efectos y widgets de UI (Button, Modal, FloorTab…)
+  context.ts    GameContext: modelo, bus de UI (`ui`: toast, selectFloor) y estado de la vista (`view.floor`, `view.welcome`)
+src/view/     objetos visuales (CreatureView, EggView), efectos y widgets de UI (Button, Modal, FloorTab, ShopPopup…)
 src/main.ts   arma GameModel + SaveManager + Phaser.Game y conecta el guardado
 ```
 
@@ -71,7 +71,8 @@ src/main.ts   arma GameModel + SaveManager + Phaser.Game y conecta el guardado
 
 ## Guardado
 
-- Clave `fusionitos.save`, con formato `{ version, savedAt, state }`.
+- Clave `fusionitos.save`, con formato `{ version, savedAt, state }`. La versión actual es la **2** (v1 → v2 agregó `purchases`).
+- `savedAt` es el último momento en que el juego corrió: con la pestaña oculta, `main.ts` fecha los guardados en el momento en que se ocultó. El ingreso offline depende de eso.
 - **Si cambia la forma de `GameState`:**
   1. subí `SAVE_VERSION` en `src/core/save.ts`;
   2. agregá la migración desde la versión anterior;
@@ -83,8 +84,10 @@ src/main.ts   arma GameModel + SaveManager + Phaser.Game y conecta el guardado
 - En desarrollo existe `window.__debug` (no se incluye en el build), con:
   - `model` y `game`;
   - `spawnEgg()` y `spawnCreature(level)` (aparece en el piso de su nivel y lo desbloquea);
+  - `addCoins(n)` y `simulateAway(ms)` (ingreso offline y bienvenida, como al volver a la pestaña);
   - `selectFloor(floor)` y `currentFloor()` (pisos desde 0);
-  - `entities()` (las del piso que se ve) y `buttons()` (botones y pestañas `tab:N`), con posiciones en píxeles de la página;
+  - `entities()` (las del piso que se ve), con posiciones en píxeles de la página;
+  - `buttons()`: los botones visibles, con posiciones en píxeles de la página. Se llaman `shop`, `shop:close`, `buy:N`, `reset`, `tab:N`; los de los popups, por su texto;
   - `toPage(x, y)` y `clearSave()`.
 - Con el MCP de Playwright (`.mcp.json`): `npm run dev` y abrir http://localhost:5173.
   - Para arrastrar sobre el canvas, usá `page.mouse` (down / move con pasos / up) con las coordenadas de `__debug.entities()`.

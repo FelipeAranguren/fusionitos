@@ -1,5 +1,5 @@
 import { BALANCE } from '../config/balance.ts';
-import { FLOOR_COUNT } from './levels.ts';
+import { FLOOR_COUNT, MAX_LEVEL } from './levels.ts';
 import type { EntityId, GameState } from './types.ts';
 
 export function createInitialState(): GameState {
@@ -9,6 +9,7 @@ export function createInitialState(): GameState {
     discovered: [],
     eggTimerMs: BALANCE.EGG_INTERVAL_MS - BALANCE.FIRST_EGG_DELAY_MS,
     nextId: 1,
+    purchases: Array.from({ length: MAX_LEVEL }, () => 0),
   };
 }
 

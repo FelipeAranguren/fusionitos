@@ -1,12 +1,15 @@
 import { BALANCE } from '../config/balance.ts';
-import { floorOfLevel, isValidLevel } from './levels.ts';
+import { MAX_LEVEL, floorOfLevel, isValidLevel } from './levels.ts';
 import { createInitialState } from './state.ts';
 import type { DeepReadonly, Entity, GameState } from './types.ts';
 
 export const SAVE_KEY = 'fusionitos.save';
 export const CORRUPT_SAVE_KEY = 'fusionitos.save.corrupt';
-/** Subila (y agregá una migración) cada vez que cambie la forma de GameState. */
-export const SAVE_VERSION = 1;
+/**
+ * Subila (y agregá una migración) cada vez que cambie la forma de GameState.
+ * v1: F1/F2. v2: compras de la tienda (`purchases`).
+ */
+export const SAVE_VERSION = 2;
 
 /** Lo mínimo que se usa de localStorage; inyectable para tests. */
 export interface StorageLike {
@@ -31,7 +34,15 @@ type RawObject = Record<string, unknown>;
 type Migration = (file: RawObject) => RawObject;
 
 /** MIGRATIONS[v] convierte un guardado de la versión v a la v+1. */
-const MIGRATIONS: Readonly<Partial<Record<number, Migration>>> = {};
+const MIGRATIONS: Readonly<Partial<Record<number, Migration>>> = {
+  // v1 → v2: llega la tienda; nadie compró nada todavía.
+  1: (file) => ({ ...file, version: 2, state: isObject(file.state) ? { ...file.state, purchases: [] } : file.state }),
+};
+
+export interface LoadedSave {
+  state: GameState;
+  savedAt: number;
+}
 
 export function serializeSave(state: DeepReadonly<GameState>, savedAt: number): string {
   const file: SaveFile = { version: SAVE_VERSION, savedAt, state };
@@ -77,11 +88,11 @@ export class SaveManager {
     this.now = now;
   }
 
-  /** Estado guardado, o null si no hay. Un guardado corrupto se respalda aparte y se ignora. */
-  load(): GameState | null {
+  /** Guardado y su fecha, o null si no hay. Un guardado corrupto se respalda aparte y se ignora. */
+  load(): LoadedSave | null {
     const raw = this.read(SAVE_KEY);
     const parsed = parseSave(raw);
-    if (parsed.status === 'ok') return parsed.state;
+    if (parsed.status === 'ok') return { state: parsed.state, savedAt: parsed.savedAt };
     if (parsed.status === 'invalid' && raw !== null) {
       console.warn(`[guardado] ${parsed.reason}: se respalda en "${CORRUPT_SAVE_KEY}" y se empieza de cero.`);
       this.write(CORRUPT_SAVE_KEY, raw);
@@ -89,9 +100,12 @@ export class SaveManager {
     return null;
   }
 
-  /** Devuelve false si no hay storage o si falló (modo privado, cuota llena…). */
-  save(state: DeepReadonly<GameState>): boolean {
-    return this.write(SAVE_KEY, serializeSave(state, this.now()));
+  /**
+   * Devuelve false si no hay storage o si falló (modo privado, cuota llena…).
+   * `savedAt` permite fechar el guardado en el último momento en que el juego corrió (pestaña oculta).
+   */
+  save(state: DeepReadonly<GameState>, savedAt: number = this.now()): boolean {
+    return this.write(SAVE_KEY, serializeSave(state, savedAt));
   }
 
   clear(): void {
@@ -156,6 +170,12 @@ function sanitizeState(raw: unknown): GameState | null {
 
   const savedNextId = finiteOr(raw.nextId, 1);
   state.nextId = Math.max(Number.isInteger(savedNextId) ? savedNextId : 1, Math.max(0, ...usedIds) + 1);
+
+  const rawPurchases: unknown[] = Array.isArray(raw.purchases) ? raw.purchases : [];
+  state.purchases = Array.from({ length: MAX_LEVEL }, (_, i) => {
+    const count = rawPurchases[i];
+    return typeof count === 'number' && Number.isInteger(count) && count > 0 ? count : 0;
+  });
   return state;
 }
 

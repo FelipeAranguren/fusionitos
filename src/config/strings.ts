@@ -6,7 +6,7 @@ export const STRINGS = {
   incomePerSecond: (amount: string) => `+${amount}/s`,
   coinPop: (amount: string) => `+${amount}`,
   capacity: (count: number, max: number) => `${count}/${max}`,
-  hint: 'Tocá los huevos · Arrastrá dos iguales para fusionarlas',
+  hint: 'Tocá los huevos · Arrastrá dos iguales',
   fieldFull: '¡Campo lleno! Fusioná criaturas para hacer lugar',
 
   discoveryTitle: '¡Nueva criatura descubierta!',
@@ -14,6 +14,20 @@ export const STRINGS = {
     `Piso ${floor + 1} · ${floorName} · Nivel ${tier}`,
   discoveryIncome: (amount: string) => `Produce ${amount} ${amount === '1' ? 'moneda' : 'monedas'} por segundo`,
   discoveryOk: '¡Genial!',
+
+  shop: 'Tienda',
+  shopUnknown: '???',
+  shopNeedsMore: (count: number) => `Descubrí ${count} más`,
+  shopRule: (levels: number) => `Se venden hasta ${levels} niveles por debajo de tu mejor criatura`,
+  shopFloorFull: '¡Piso lleno! Fusioná para hacer lugar',
+  close: 'Cerrar',
+
+  welcomeTitle: '¡Hola de nuevo!',
+  welcomeAway: (duration: string) => `Estuviste afuera ${duration}.`,
+  welcomeEarned: 'Mientras tanto, tus criaturas juntaron',
+  welcomeNote: (percent: number, hours: number) => `Se cuenta el ${percent}% del ingreso, hasta ${hours} horas.`,
+  welcomeOk: '¡Genial!',
+  duration: { underAMinute: 'menos de 1 min', day: 'd', hour: 'h', minute: 'min' },
 
   reset: 'Reiniciar',
   resetTitle: '¿Reiniciar el juego?',

@@ -17,6 +17,9 @@ export interface DebugApi {
   game: Phaser.Game;
   spawnEgg(): Egg | null;
   spawnCreature(level: number): Creature | null;
+  addCoins(amount: number): void;
+  /** Simula volver después de `ms` de ausencia (ingreso offline y bienvenida). */
+  simulateAway(ms: number): void;
   /** Pide mostrar un piso (igual que tocar su pestaña). */
   selectFloor(floor: number): void;
   /** Piso que muestra el campo ahora (índice desde 0). */
@@ -35,7 +38,12 @@ declare global {
   }
 }
 
-export function installDebugHooks(game: Phaser.Game, ctx: GameContext, clearSave: () => void): void {
+interface DebugOptions {
+  clearSave(): void;
+  simulateAway(ms: number): void;
+}
+
+export function installDebugHooks(game: Phaser.Game, ctx: GameContext, { clearSave, simulateAway }: DebugOptions): void {
   const { model } = ctx;
   const toPage = (x: number, y: number): PagePoint => {
     const rect = game.canvas.getBoundingClientRect();
@@ -46,6 +54,8 @@ export function installDebugHooks(game: Phaser.Game, ctx: GameContext, clearSave
     game,
     spawnEgg: () => model.debugSpawnEgg(),
     spawnCreature: (level) => model.debugAddCreature(level),
+    addCoins: (amount) => model.debugAddCoins(amount),
+    simulateAway,
     selectFloor: (floor) => ctx.ui.emit('selectFloor', { floor }),
     currentFloor: () => ctx.view.floor,
     entities: () => game.scene.getScene<GameScene>('Game').debugViews().map((view) => ({ ...view, page: toPage(view.x, view.y) })),

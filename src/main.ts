@@ -11,7 +11,7 @@ import { GameModel } from './core/GameModel.ts';
 import { floorConfig } from './core/levels.ts';
 import { SaveManager, type StorageLike } from './core/save.ts';
 import { BootScene } from './scenes/BootScene.ts';
-import type { GameContext, UiEvents } from './scenes/context.ts';
+import type { GameContext, UiEvents, ViewState } from './scenes/context.ts';
 import { GameScene } from './scenes/GameScene.ts';
 import { UIScene } from './scenes/UIScene.ts';
 
@@ -31,16 +31,21 @@ async function waitForFonts(timeoutMs: number): Promise<void> {
 
 async function start(): Promise<void> {
   const saves = new SaveManager(getStorage());
-  const model = new GameModel(saves.load() ?? undefined);
+  const loaded = saves.load();
+  const model = new GameModel(loaded?.state);
   const ui = new Emitter<UiEvents>();
+  const view: ViewState = { floor: 0, welcome: null };
   let warnedSaveFailure = false;
+  // Con la pestaña oculta el juego está en pausa: el guardado queda fechado en el momento en que se ocultó,
+  // así el ingreso offline cuenta toda la ausencia aunque después se cierre la pestaña.
+  let hiddenSince: number | null = null;
 
   const ctx: GameContext = {
     model,
     ui,
-    view: { floor: 0 },
+    view,
     saveNow: () => {
-      if (saves.save(model.state) || warnedSaveFailure) return;
+      if (saves.save(model.state, hiddenSince ?? Date.now()) || warnedSaveFailure) return;
       warnedSaveFailure = true;
       ui.emit('toast', { text: STRINGS.saveFailed });
     },
@@ -49,6 +54,13 @@ async function start(): Promise<void> {
       ctx.saveNow();
     },
   };
+
+  /** Ingreso offline de una ausencia; si corresponde, la UIScene muestra la bienvenida. */
+  const welcomeBack = (awayMs: number): void => {
+    const earnings = model.applyOfflineEarnings(awayMs);
+    if (earnings) view.welcome = earnings;
+  };
+  if (loaded) welcomeBack(Date.now() - loaded.savedAt);
 
   document.title = STRINGS.title;
   const pageColor = floorConfig(0).pageColor;
@@ -72,14 +84,21 @@ async function start(): Promise<void> {
   // Autoguardado, y también al ocultar o cerrar la pestaña (en celulares `pagehide` es lo confiable).
   window.setInterval(ctx.saveNow, BALANCE.AUTOSAVE_INTERVAL_MS);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') ctx.saveNow();
+    if (document.visibilityState === 'hidden') {
+      hiddenSince ??= Date.now();
+      ctx.saveNow();
+    } else if (hiddenSince !== null) {
+      const awayMs = Date.now() - hiddenSince;
+      hiddenSince = null;
+      welcomeBack(awayMs);
+    }
   });
   window.addEventListener('pagehide', ctx.saveNow);
   window.addEventListener('beforeunload', ctx.saveNow);
 
   if (import.meta.env.DEV) {
     const { installDebugHooks } = await import('./debug.ts');
-    installDebugHooks(game, ctx, () => saves.clear());
+    installDebugHooks(game, ctx, { clearSave: () => saves.clear(), simulateAway: welcomeBack });
   }
 }
 

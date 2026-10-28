@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatNumber } from './format.ts';
+import { formatDuration, formatNumber } from './format.ts';
 
 describe('formatNumber', () => {
   it.each([
@@ -34,5 +34,21 @@ describe('formatNumber', () => {
   it('maneja negativos e infinitos', () => {
     expect(formatNumber(-1234)).toBe('-1.2K');
     expect(formatNumber(Infinity)).toBe('∞');
+  });
+});
+
+describe('formatDuration', () => {
+  const MIN = 60_000;
+  it.each([
+    [30_000, 'menos de 1 min'],
+    [MIN, '1 min'],
+    [45 * MIN + 59_000, '45 min'],
+    [60 * MIN, '1 h'],
+    [135 * MIN, '2 h 15 min'],
+    [24 * 60 * MIN, '1 d'],
+    [(24 * 3 + 4) * 60 * MIN + 30 * MIN, '3 d 4 h'],
+    [-MIN, 'menos de 1 min'],
+  ])('%d ms → %s', (ms, expected) => {
+    expect(formatDuration(ms)).toBe(expected);
   });
 });

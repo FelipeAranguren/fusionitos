@@ -116,6 +116,28 @@ describe('parseSave', () => {
     expect(state.nextId).toBe(11);
   });
 
+  it('migra un guardado v1 (anterior a la tienda) sin perder nada', () => {
+    const creature = { kind: 'creature', id: 2, level: 2, x: 0.5, y: 0.25, payoutMs: 900 };
+    const v1 = {
+      version: 1,
+      savedAt: 5,
+      state: { coins: 99, eggTimerMs: 100, nextId: 3, discovered: [1, 2], floors: [{ entities: [creature] }] },
+    };
+    const parsed = parseSave(JSON.stringify(v1));
+    expect(parsed.status).toBe('ok');
+    if (parsed.status !== 'ok') return;
+    expect(parsed.savedAt).toBe(5);
+    expect(parsed.state).toMatchObject({ coins: 99, eggTimerMs: 100, nextId: 3, discovered: [1, 2] });
+    expect(parsed.state.floors[0].entities).toEqual([creature]);
+    expect(parsed.state.purchases).toEqual(Array(30).fill(0));
+  });
+
+  it('sanea las compras: enteros positivos, una por nivel', () => {
+    const purchases = [3, -1, 1.5, 'x', null, 2, ...Array(40).fill(1)];
+    const parsed = parseSave(JSON.stringify({ version: SAVE_VERSION, savedAt: 0, state: { purchases } }));
+    expect(parsed.status === 'ok' && parsed.state.purchases).toEqual([3, 0, 0, 0, 0, 2, ...Array(24).fill(1)]);
+  });
+
   it('nunca carga más entidades que la capacidad del piso', () => {
     const entities = Array.from({ length: 20 }, (_, i) => ({ kind: 'egg', id: i + 1, x: 0.5, y: 0.5 }));
     const raw = JSON.stringify({ version: SAVE_VERSION, savedAt: 0, state: { floors: [{ entities }] } });
@@ -131,7 +153,13 @@ describe('SaveManager', () => {
     const state = sampleState();
     expect(manager.save(state)).toBe(true);
     expect(JSON.parse(storage.getItem(SAVE_KEY) ?? '')).toMatchObject({ version: SAVE_VERSION, savedAt: 1000 });
-    expect(new SaveManager(storage).load()).toEqual(state);
+    expect(new SaveManager(storage).load()).toEqual({ state, savedAt: 1000 });
+  });
+
+  it('se puede fechar el guardado en otro momento (pestaña oculta)', () => {
+    const storage = new MemoryStorage();
+    new SaveManager(storage, () => 9999).save(sampleState(), 1234);
+    expect(new SaveManager(storage).load()?.savedAt).toBe(1234);
   });
 
   it('sin guardado devuelve null', () => {

@@ -17,12 +17,16 @@ export const LAYOUT = {
   toastY: 1580,
   /** Pestañas de pisos, al pie. */
   tabs: { top: 1668, height: 160, marginX: 24, gap: 12, radius: 34 },
+  /** Última línea: la pista a la izquierda y el botón de reiniciar a la derecha. */
+  hintX: 44,
   hintY: 1876,
+  resetButton: { x: 946, width: 220, height: 64 },
 } as const;
 
 /** Íconos de la interfaz que se generan desde emojis (los de criaturas están en creatures.ts). */
 export const ICONS = {
   lock: '🔒',
+  shop: '🛒',
 } as const;
 
 export const SIZES = {
@@ -84,7 +88,9 @@ export const COLORS = {
   danger: 0xe5533d,
   primary: 0x4cae4c,
   neutral: 0x8a94a6,
+  disabled: 0xb3aca0,
   card: 0xfff8ec,
+  cardRow: 0xf3e7d3,
   dim: 0x000000,
   dimAlpha: 0.6,
   shadow: 0x000000,

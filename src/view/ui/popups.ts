@@ -1,10 +1,11 @@
 import type Phaser from 'phaser';
+import { BALANCE } from '../../config/balance.ts';
 import { STRINGS } from '../../config/strings.ts';
 import { COLORS } from '../../config/visuals.ts';
-import { incomePerSecond } from '../../core/economy.ts';
-import { formatNumber } from '../../core/format.ts';
+import { incomePerSecond, type OfflineEarnings } from '../../core/economy.ts';
+import { formatDuration, formatNumber } from '../../core/format.ts';
 import { creatureConfig, floorConfig, floorOfLevel, tierOfLevel } from '../../core/levels.ts';
-import { creatureTextureKey } from '../textures.ts';
+import { TEXTURES, creatureTextureKey } from '../textures.ts';
 import { Button } from './Button.ts';
 import { Modal } from './Modal.ts';
 import { textStyle } from './textStyle.ts';
@@ -49,6 +50,42 @@ export function openDiscoveryPopup(scene: Phaser.Scene, level: number, onClosed:
       .setOrigin(0.5),
     new Button(scene, 0, 410, {
       label: STRINGS.discoveryOk,
+      width: 440,
+      height: 120,
+      color: COLORS.primary,
+      fontSize: 52,
+      onClick: () => modal.close(),
+    }),
+  ]);
+  return modal;
+}
+
+/** Bienvenida tras una ausencia: cuánto tiempo pasó y cuánto juntaron las criaturas. */
+export function openWelcomePopup(scene: Phaser.Scene, earnings: OfflineEarnings, onClosed: () => void): Modal {
+  const modal = new Modal(scene, 860, 880, onClosed);
+  const amount = scene.add.text(0, -40, STRINGS.coinPop(formatNumber(earnings.amount)), dark(92, 700, '#b07a10')).setOrigin(0, 0.5);
+  const coin = scene.add.image(0, -40, TEXTURES.coin).setDisplaySize(96, 98);
+  const total = coin.displayWidth + 18 + amount.width;
+  coin.setX(-total / 2 + coin.displayWidth / 2);
+  amount.setX(coin.x + coin.displayWidth / 2 + 18);
+  // La escala base de la moneda no es 1 (setDisplaySize): cada uno crece hasta la suya.
+  const coinScale = coin.scaleX;
+  coin.setScale(coinScale * 0.4);
+  amount.setScale(0.4);
+  scene.tweens.add({ targets: coin, scale: coinScale, duration: 480, delay: 150, ease: 'Back.easeOut(2.5)' });
+  scene.tweens.add({ targets: amount, scale: 1, duration: 480, delay: 150, ease: 'Back.easeOut(2.5)' });
+
+  modal.card.add([
+    scene.add.text(0, -340, STRINGS.welcomeTitle, dark(60, 700)).setOrigin(0.5),
+    scene.add.text(0, -250, STRINGS.welcomeAway(formatDuration(earnings.awayMs)), dark(40, 500, COLORS.textMuted)).setOrigin(0.5),
+    scene.add.text(0, -160, STRINGS.welcomeEarned, dark(40, 600)).setOrigin(0.5),
+    coin,
+    amount,
+    scene.add
+      .text(0, 80, STRINGS.welcomeNote(BALANCE.OFFLINE_INCOME_RATE * 100, BALANCE.OFFLINE_MAX_HOURS), dark(30, 500, COLORS.textMuted))
+      .setOrigin(0.5),
+    new Button(scene, 0, 300, {
+      label: STRINGS.welcomeOk,
       width: 440,
       height: 120,
       color: COLORS.primary,

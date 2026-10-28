@@ -103,6 +103,40 @@ describe('GameModel', () => {
     expect(reset).toHaveBeenCalledOnce();
   });
 
+  it('buy cobra, encarece y avisa con creatureAdded en el piso de la criatura', () => {
+    const state = emptyState();
+    state.discovered = Array.from({ length: 10 }, (_, i) => i + 1);
+    state.coins = 1e6;
+    const model = modelWith(state);
+    const added = vi.fn();
+    model.events.on('creatureAdded', added);
+
+    expect(model.maxBuyableLevel).toBe(8);
+    expect(model.buy(8).ok).toBe(true);
+    expect(added).toHaveBeenCalledWith({ floor: 1, creature: expect.objectContaining({ level: 8 }) });
+    expect(model.coins).toBe(1e6 - 15 * 3 ** 7);
+    expect(model.priceOf(8)).toBeCloseTo(15 * 3 ** 7 * 1.15);
+  });
+
+  it('una compra rechazada no emite nada', () => {
+    const model = modelWith();
+    const added = vi.fn();
+    model.events.on('creatureAdded', added);
+    expect(model.buy(1)).toEqual({ ok: false, reason: 'locked' });
+    expect(added).not.toHaveBeenCalled();
+  });
+
+  it('applyOfflineEarnings suma las monedas y devuelve el resumen', () => {
+    const state = emptyState();
+    addCreature(state, 3); // 6.25/s
+    const model = modelWith(state);
+    const report = model.applyOfflineEarnings(2 * 3_600_000);
+    expect(report?.amount).toBe(0.5 * 6.25 * 7200);
+    expect(model.coins).toBe(0.5 * 6.25 * 7200);
+    expect(model.applyOfflineEarnings(10_000)).toBeNull();
+    expect(model.coins).toBe(0.5 * 6.25 * 7200);
+  });
+
   it('debugAddCreature agrega en el piso de su nivel y respeta la capacidad', () => {
     const model = modelWith();
     const added = vi.fn();
