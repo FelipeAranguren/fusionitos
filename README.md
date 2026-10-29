@@ -10,7 +10,7 @@ Descubrí las 120 criaturas de los 20 pisos, del Jardín a la Galaxia.
 - Tocá los huevos para abrirlos.
 - Arrastrá una criatura sobre otra igual para fusionarlas.
 - Dos del último nivel de un piso suben al piso siguiente y lo desbloquean.
-- A medida que abrís pisos, los huevos caen más arriba: siempre 3 pisos por debajo del más alto.
+- A medida que abrís pisos, los huevos caen más arriba: siempre 2 pisos por debajo del más alto. Los de más abajo se cierran.
 - Cada criatura genera monedas; en la 🛒 Tienda comprás más.
 - Mientras no jugás, tus criaturas siguen produciendo (50 %, hasta 4 horas).
 - Con el botón 📲 lo agregás a la pantalla de inicio del celular, como una app.

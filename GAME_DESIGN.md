@@ -24,7 +24,7 @@ El objetivo es descubrir las 120 criaturas, subiendo de piso en piso por los 20 
 | **Campo** | El área donde caen los huevos y deambulan las criaturas de un piso. |
 | **Capacidad** | Máximo de entidades (criaturas + huevos) en un piso: **12**. |
 | **Entidad** | Una criatura o un huevo dentro de un campo. |
-| **Piso de los huevos** | Donde caen los huevos: 3 pisos por debajo del piso más alto desbloqueado (como mínimo, el piso 1). Ver §4. |
+| **Piso de los huevos** | Donde caen los huevos: 2 pisos por debajo del piso más alto desbloqueado (como mínimo, el piso 1). Ver §4. |
 
 **Regla clave:** fusionar dos criaturas de nivel `n` da la de nivel `n+1`.
 Por eso dos criaturas de tier 6 dan automáticamente el tier 1 del piso siguiente (6+6 → 7, 12+12 → 13, etc.).
@@ -65,11 +65,13 @@ Todo el catálogo vive en `src/config/creatures.ts`. Cada criatura es `{ name, e
 ## 4. Huevos — FASE 1 (piso móvil desde los 20 pisos)
 
 - Cada **5 s** cae un huevo 🥚 en un lugar al azar del campo del **piso de los huevos**. Los demás pisos se alimentan con merges y compras.
-- **Piso de los huevos** = piso más alto desbloqueado − `EGG_FLOOR_LAG` (3), como mínimo el piso 1. A medida que se abren pisos, los huevos suben:
+- **Piso de los huevos** = piso más alto desbloqueado − `EGG_FLOOR_LAG` (2), como mínimo el piso 1. A medida que se abren pisos, los huevos suben:
 
-  | Piso más alto abierto | 1 a 4 | 5 | 6 | … | 10 | … | 20 |
+  | Piso más alto abierto | 1 a 3 | 4 | 5 | … | 10 | … | 20 |
   |---|---|---|---|---|---|---|---|
-  | Los huevos caen en | Piso 1 | Piso 2 | Piso 3 | … | Piso 7 | … | Piso 17 |
+  | Los huevos caen en | Piso 1 | Piso 2 | Piso 3 | … | Piso 8 | … | Piso 18 |
+
+- **Pisos abiertos:** quedan 3, el de los huevos, uno intermedio y el más alto; los de abajo se cierran (§8). Hasta hace poco los huevos caían 3 pisos abajo y quedaban 4 abiertos.
 
 - **Cuando sube:** el piso donde caían queda **cerrado** (§8): se vacía, con los huevos que tenía. Al final de la animación de cierre se pasa al piso nuevo de los huevos, aparece el aviso "🥚 ¡Ahora los huevos caen en el Piso N: nombre!" y su pestaña salta.
 - En una partida nueva, el primer huevo cae a **1 s**, para que el campo no arranque vacío.
@@ -304,24 +306,30 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
 | 6 Ciudad | 31 min | 9 min |
 | 7 Lago | 41 min | 10 min |
 | 8 Pradera | 51 min | 11 min |
-| 9 Desierto | 1 h 3 min | 12 min |
+| 9 Desierto | 1 h 2 min | 12 min |
 | 10 Sabana | 1 h 15 min | 13 min |
 | 11 Selva | 1 h 29 min | 15 min |
 | 12 Montaña | 1 h 44 min | 16 min |
-| 13 Polo | 2 h 1 min | 18 min |
+| 13 Polo | 2 h | 18 min |
 | 14 Noche | 2 h 19 min | 20 min |
 | 15 Prehistoria | 2 h 39 min | 22 min |
 | 16 Abismo | 3 h 1 min | 24 min |
 | 17 Mansión | 3 h 25 min | 26 min |
 | 18 Reino mágico | 3 h 52 min | 29 min |
-| 19 Juguetería | 4 h 22 min | 32 min |
+| 19 Juguetería | 4 h 21 min | 32 min |
 | 20 Galaxia | 4 h 54 min | 29 min |
 
 - **Total: 5 h 23 min**, igual con otras semillas. Los primeros pisos salen en pocos minutos; los últimos, en unos 25 cada uno.
 - **Ingreso −20 %** (`INCOME_BASE` de 1 a 0.8, para que la partida dure más): antes terminaba en 4 h 19 min.
 - Cerrar los pisos que quedan por debajo del de los huevos (§8) no cambia la tabla: lo que tenían rendía muy poco.
 - La velocidad del jugador casi no cambia el resultado: lo que manda es la tienda.
-- **Huevos contra tienda:** por cantidad, el 76 % de las criaturas nuevas salen de huevos; por ingreso, apenas el 0.00008 %. Un huevo da el tier 1 de un piso 3 por debajo del más alto, unos 18 niveles por debajo de lo que vende la tienda (2.5¹⁸ ≈ 14 millones de veces menos). Bajar el ingreso no cambia esa proporción. Con los huevos 1 piso por debajo del más alto (`EGG_FLOOR_LAG` 1), aportarían el 3.6 % y la partida duraría 4 h 27 min.
+- **Huevos contra tienda:** por cantidad, el 76 % de las criaturas nuevas salen de huevos; por ingreso, el 0.019 %. Un huevo da el tier 1 de un piso 2 por debajo del más alto, unos 12 niveles por debajo de lo que vende la tienda (2.5¹² ≈ 60 000 veces menos). Bajar el ingreso no cambia esa proporción; acercar los huevos al piso más alto, sí:
+
+  | `EGG_FLOOR_LAG` | Pisos abiertos | Ingreso que aportan los huevos | Partida completa |
+  |---|---|---|---|
+  | 3 | 4 | 0.00008 % | 5 h 23 min |
+  | **2** | **3** | **0.019 %** | **5 h 23 min** (actual) |
+  | 1 | 2 | 3.6 % | 4 h 27 min |
 - **Referencia:** con la economía de 5 pisos, el simulador tardaba 1.5–2 h en algo que un jugador real terminaba en 30–60 min. Una persona atenta puede ir más rápido que el simulador.
 - **Para ajustar la duración:** `SHOP_BASE_PRICE` y `INCOME_BASE` la cambian de forma casi proporcional; `SHOP_PRICE_GROWTH`, de forma exponencial. Algunas pruebas (con `INCOME_BASE` 0.8):
 
@@ -413,7 +421,7 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
 | `FLOOR_CAPACITY` | 12 | Máximo de criaturas + huevos por piso. |
 | `EGG_INTERVAL_MS` | 5000 | Cada cuánto cae un huevo. |
 | `FIRST_EGG_DELAY_MS` | 1000 | Espera hasta el primer huevo de una partida nueva. |
-| `EGG_FLOOR_LAG` | 3 | Cuántos pisos por debajo del más alto desbloqueado caen los huevos (como mínimo, en el 1). |
+| `EGG_FLOOR_LAG` | 2 | Cuántos pisos por debajo del más alto desbloqueado caen los huevos (como mínimo, en el 1). Quedan abiertos `EGG_FLOOR_LAG + 1` pisos. Era 3. |
 | `SPAWN_CANDIDATES` | 12 | Posiciones sorteadas para elegir dónde cae un huevo. |
 | `INCOME_BASE` | 0.8 | Ingreso del nivel 1 (monedas/s). Era 1 (§7.6). |
 | `INCOME_GROWTH` | 2.5 | Factor de ingreso por nivel. |
@@ -459,7 +467,7 @@ Las constantes visuales (tamaños, velocidades de deambular, duraciones de anima
 
 ### Extra — 20 pisos ✅
 - [x] 20 pisos de temáticas distintas, con 120 criaturas.
-- [x] Los huevos suben de piso: caen 3 pisos por debajo del más alto abierto, y de cada huevo sale el tier 1 de su piso.
+- [x] Los huevos suben de piso: caen por debajo del más alto abierto (eran 3 pisos; hoy, 2), y de cada huevo sale el tier 1 de su piso.
 - [x] Barra de pestañas con 5 pisos a la vista y flechas; 🥚 en la pestaña del piso de los huevos; atajo desde el HUD.
 - [x] Economía rebalanceada con un simulador (`npm run simulate`): unas 4 h para terminar.
 
@@ -469,6 +477,7 @@ Las constantes visuales (tamaños, velocidades de deambular, duraciones de anima
 
 ### Extra — partida más lenta ✅
 - [x] Ingreso de todas las criaturas −20 % (`INCOME_BASE` 0.8): la partida pasa de 4 h 19 min a 5 h 23 min.
+- [x] Los huevos caen 2 pisos por debajo del más alto (eran 3): quedan 3 pisos abiertos.
 
 ### Extra — acceso directo ✅
 - [x] Instalable como app (manifest e íconos): abre a pantalla completa, en vertical.
