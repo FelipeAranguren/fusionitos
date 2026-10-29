@@ -1,9 +1,10 @@
 import { STRINGS } from '../config/strings.ts';
 
 // Con 120 niveles los precios llegan a ~10^50: los sufijos cubren hasta 10^63.
+// Los de octillón van con "o" minúscula: en Fredoka la "O" es igual a un cero y "29Oc" se leía "290c".
 const SUFFIXES = [
-  '', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc',
-  'Ud', 'Dd', 'Td', 'Qad', 'Qid', 'Sxd', 'Spd', 'Ocd', 'Nod', 'Vg',
+  '', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'oc', 'No', 'Dc',
+  'Ud', 'Dd', 'Td', 'Qad', 'Qid', 'Sxd', 'Spd', 'ocd', 'Nod', 'Vg',
 ] as const;
 
 // Margen para que errores de coma flotante (5.6e9 / 1e9 = 5.6000…01) no bajen un dígito al truncar.

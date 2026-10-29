@@ -21,12 +21,21 @@ describe('formatNumber', () => {
     [1e12, '1T'],
     [1.5e15, '1.5Qa'],
     [2.5 ** 29, '346B'],
+    [2.9e28, '29oc'],
+    [1e30, '1No'],
     [1e36, '1Ud'],
+    [2.9e58, '29ocd'],
     [4.2e49, '42Qid'],
     [1e63, '1Vg'],
     [1e66, '1.00e66'],
   ])('%d → %s', (value, expected) => {
     expect(formatNumber(value)).toBe(expected);
+  });
+
+  it('ningún sufijo empieza con O mayúscula: en la fuente del juego parece un cero ("29Oc" se leía "290c")', () => {
+    for (let exponent = 3; exponent <= 63; exponent += 3) {
+      expect(formatNumber(29 * 10 ** exponent)).not.toMatch(/\dO/);
+    }
   });
 
   it('trunca en vez de redondear (nunca muestra más de lo que hay)', () => {

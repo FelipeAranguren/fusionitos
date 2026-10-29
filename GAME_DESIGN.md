@@ -123,7 +123,8 @@ Se usa punto decimal y se **trunca** (nunca se muestra más de lo que hay).
 
 - **Menos de 100 en su escala:** un decimal (`7.5`, `1.2K`, `56.3M`).
 - **Desde 100:** sin decimales (`244`, `123K`).
-- **Sufijos:** K, M, B, T, Qa, Qi, Sx, Sp, Oc, No, Dc, Ud, Dd, Td, Qad, Qid, Sxd, Spd, Ocd, Nod, Vg (10³ a 10⁶³). Los precios más altos rondan los 10⁵⁰ (Qid). Desde 10⁶⁶, notación científica (`1.00e66`).
+- **Sufijos:** K, M, B, T, Qa, Qi, Sx, Sp, oc, No, Dc, Ud, Dd, Td, Qad, Qid, Sxd, Spd, ocd, Nod, Vg (10³ a 10⁶³). Los precios más altos rondan los 10⁵⁰ (Qid). Desde 10⁶⁶, notación científica (`1.00e66`).
+  - Los de octillón (`oc`, `ocd`) van con "o" minúscula: en la fuente del juego la "O" mayúscula es igual a un cero, y `29Oc` se leía "290c" (diez veces más).
 - **Contador de monedas:** muestra la parte entera.
 
 Ejemplos: 999 → `999` · 1000 → `1K` · 1234 → `1.2K` · 3 456 789 → `3.4M` · 5.6×10⁹ → `5.6B`.
@@ -228,19 +229,19 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
 | 61 | 11 Selva · 1 | 🦜 Loro | 752Sx | +2.2Sp | 136Sp | 3.0 min |
 | 62 | 11 Selva · 2 | 🐒 Mono | 1.8Sp | +5.6Sp | 346Sp | 3.1 min |
 | 63 | 11 Selva · 3 | 🦥 Perezoso | 4.7Sp | +14.1Sp | 880Sp | 3.1 min |
-| 64 | 11 Selva · 4 | 🐅 Tigre | 11.7Sp | +35.2Sp | 2.2Oc | 3.2 min |
-| 65 | 11 Selva · 5 | 🦧 Orangután | 29.3Sp | +88.1Sp | 5.6Oc | 3.2 min |
-| 66 | 11 Selva · 6 | 🦍 Gorila | 73.4Sp | +220Sp | 14.4Oc | 3.3 min |
-| 67 | 12 Montaña · 1 | 🐐 Cabra | 183Sp | +551Sp | 36.6Oc | 3.3 min |
-| 68 | 12 Montaña · 2 | 🐏 Carnero | 459Sp | +1.3Oc | 93.1Oc | 3.4 min |
-| 69 | 12 Montaña · 3 | 🦙 Llama | 1.1Oc | +3.4Oc | 236Oc | 3.4 min |
-| 70 | 12 Montaña · 4 | 🐂 Yak | 2.8Oc | +8.6Oc | 600Oc | 3.5 min |
-| 71 | 12 Montaña · 5 | 🦬 Bisonte | 7.1Oc | +21.5Oc | 1.5No | 3.5 min |
-| 72 | 12 Montaña · 6 | 🦅 Cóndor | 17.9Oc | +53.8Oc | 3.8No | 3.6 min |
-| 73 | 13 Polo · 1 | 🐧 Pingüino | 44.8Oc | +134Oc | 9.8No | 3.7 min |
-| 74 | 13 Polo · 2 | 🦭 Foca | 112Oc | +336Oc | 25No | 3.7 min |
-| 75 | 13 Polo · 3 | 🐺 Lobo ártico | 280Oc | +840Oc | 63.5No | 3.8 min |
-| 76 | 13 Polo · 4 | 🐳 Orca | 700Oc | +2.1No | 161No | 3.8 min |
+| 64 | 11 Selva · 4 | 🐅 Tigre | 11.7Sp | +35.2Sp | 2.2oc | 3.2 min |
+| 65 | 11 Selva · 5 | 🦧 Orangután | 29.3Sp | +88.1Sp | 5.6oc | 3.2 min |
+| 66 | 11 Selva · 6 | 🦍 Gorila | 73.4Sp | +220Sp | 14.4oc | 3.3 min |
+| 67 | 12 Montaña · 1 | 🐐 Cabra | 183Sp | +551Sp | 36.6oc | 3.3 min |
+| 68 | 12 Montaña · 2 | 🐏 Carnero | 459Sp | +1.3oc | 93.1oc | 3.4 min |
+| 69 | 12 Montaña · 3 | 🦙 Llama | 1.1oc | +3.4oc | 236oc | 3.4 min |
+| 70 | 12 Montaña · 4 | 🐂 Yak | 2.8oc | +8.6oc | 600oc | 3.5 min |
+| 71 | 12 Montaña · 5 | 🦬 Bisonte | 7.1oc | +21.5oc | 1.5No | 3.5 min |
+| 72 | 12 Montaña · 6 | 🦅 Cóndor | 17.9oc | +53.8oc | 3.8No | 3.6 min |
+| 73 | 13 Polo · 1 | 🐧 Pingüino | 44.8oc | +134oc | 9.8No | 3.7 min |
+| 74 | 13 Polo · 2 | 🦭 Foca | 112oc | +336oc | 25No | 3.7 min |
+| 75 | 13 Polo · 3 | 🐺 Lobo ártico | 280oc | +840oc | 63.5No | 3.8 min |
+| 76 | 13 Polo · 4 | 🐳 Orca | 700oc | +2.1No | 161No | 3.8 min |
 | 77 | 13 Polo · 5 | ☃️ Muñeco de nieve | 1.7No | +5.2No | 409No | 3.9 min |
 | 78 | 13 Polo · 6 | 🦣 Mamut | 4.3No | +13.1No | 1Dc | 4.0 min |
 | 79 | 14 Noche · 1 | 🦗 Grillo | 10.9No | +32.8No | 2.6Dc | 4.0 min |
