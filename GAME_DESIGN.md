@@ -43,7 +43,7 @@ Todo el catálogo vive en `src/config/creatures.ts`. Cada criatura es `{ name, e
 | 6 Ciudad | gris | 🧱 🚲 | 🐀 Rata | 🐦 Gorrión | 🦝 Mapache | 🐈 Gato | 🐕 Perro | 🐩 Caniche |
 | 7 Lago | turquesa | 🪨 💧 | 🐟 Trucha | 🦆 Pato | 🦦 Nutria | 🦫 Castor | 🦢 Cisne | 🦩 Flamenco |
 | 8 Pradera | verde lima | 🌾 🌷 | 🐁 Ratón | 🐹 Hámster | 🦃 Pavo | 🐗 Jabalí | 🐃 Búfalo | 🐎 Mustang |
-| 9 Desierto | arena | 🌵 🪨 | 🪲 Escarabajo | 🦂 Escorpión | 🐍 Serpiente | 🦊 Fénec | 🐪 Dromedario | 🐫 Camello |
+| 9 Desierto | arena | 🌵 🪨 | 🪲 Escarabajo | 🦂 Escorpión | 🐍 Serpiente | 🦊 Fénec | 🦘 Canguro | 🐫 Camello |
 | 10 Sabana | ocre | 🌳 🍂 | 🦓 Cebra | 🦒 Jirafa | 🐆 Leopardo | 🦏 Rinoceronte | 🐘 Elefante | 🦁 León |
 | 11 Selva | verde selva | 🌴 🌺 | 🦜 Loro | 🐒 Mono | 🦥 Perezoso | 🐅 Tigre | 🦧 Orangután | 🦍 Gorila |
 | 12 Montaña | gris azulado | 🪨 🌲 ❄️ | 🐐 Cabra | 🐏 Carnero | 🦙 Llama | 🐂 Yak | 🦬 Bisonte | 🦅 Cóndor |
@@ -217,7 +217,7 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
 | 50 | 9 Desierto · 2 | 🦂 Escorpión | 31.5Qi | +94.6Qi | 4.8Sx | 2.5 min |
 | 51 | 9 Desierto · 3 | 🐍 Serpiente | 78.8Qi | +236Qi | 12.2Sx | 2.6 min |
 | 52 | 9 Desierto · 4 | 🦊 Fénec | 197Qi | +591Qi | 31Sx | 2.6 min |
-| 53 | 9 Desierto · 5 | 🐪 Dromedario | 493Qi | +1.4Sx | 78.7Sx | 2.7 min |
+| 53 | 9 Desierto · 5 | 🦘 Canguro | 493Qi | +1.4Sx | 78.7Sx | 2.7 min |
 | 54 | 9 Desierto · 6 | 🐫 Camello | 1.2Sx | +3.6Sx | 200Sx | 2.7 min |
 | 55 | 10 Sabana · 1 | 🦓 Cebra | 3Sx | +9.2Sx | 508Sx | 2.7 min |
 | 56 | 10 Sabana · 2 | 🦒 Jirafa | 7.7Sx | +23.1Sx | 1.2Sp | 2.8 min |

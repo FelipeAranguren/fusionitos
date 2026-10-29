@@ -166,7 +166,7 @@ export const FLOORS: readonly FloorConfig[] = [
       { name: 'Escorpión', emoji: '🦂' },
       { name: 'Serpiente', emoji: '🐍' },
       { name: 'Fénec', emoji: '🦊' },
-      { name: 'Dromedario', emoji: '🐪' },
+      { name: 'Canguro', emoji: '🦘' },
       { name: 'Camello', emoji: '🐫' },
     ],
   },
