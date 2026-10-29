@@ -58,6 +58,7 @@ src/main.ts   arma GameModel + SaveManager + Phaser.Game y conecta el guardado
 - La lógica aplica el cambio al instante; las animaciones son solo visuales y nunca bloquean al modelo.
 - El modelo guarda las posiciones **normalizadas** (0..1 dentro del campo). La conversión a píxeles se hace solo en `src/view/fieldSpace.ts`.
 - Las criaturas se dibujan por clave de textura. `BootScene` carga las `image` del catálogo y genera las texturas fijas (huevo, íconos, moneda). Las de criaturas y decoración se generan desde el emoji la primera vez que se usan: pedí la clave con `ensureCreatureTexture(scene, n)` o `ensureDecorTexture(scene, emoji)` (`src/view/textures.ts`), nunca armándola a mano.
+- **Texturas dibujadas por código:** pasan por `addGeneratedTexture`, que en WebGL las registra como píxeles (`addUint8Array`) y no como canvas. Con la pestaña en segundo plano, el celular puede perder la GPU y con ella el contenido de los canvas: los emojis desaparecían. Al recuperar el contexto, Phaser vuelve a subir cada textura desde sus píxeles.
 - **Barra de pestañas:** 5 `FloorTab` fijas que muestran pisos según una ventana (`src/view/tabWindow.ts`, puro y testeado), más dos `TabArrow`. `UIScene` recalcula la ventana cuando cambia el piso que se ve o el de los huevos.
 - **Piso que se ve:**
   - Es estado de la vista (`ctx.view.floor`), no del juego, así que no se guarda.
@@ -114,3 +115,4 @@ src/main.ts   arma GameModel + SaveManager + Phaser.Game y conecta el guardado
   - Para arrastrar sobre el canvas, usá `page.mouse` (down / move con pasos / up) con las coordenadas de `__debug.entities()`.
   - Las pruebas automáticas corren en un navegador headless aparte. El usuario suele jugar en la ventana visible de Playwright: no le cambies el viewport (`browser_resize` lo fija y rompe el ajuste y el zoom).
   - Las capturas van fuera del repo (`.playwright-mcp/` está en `.gitignore`).
+  - Para simular que el celular pierde la GPU: en el Chrome headless, `(await browser.newBrowserCDPSession()).send('Browser.crashGpuProcess')`. Con `WEBGL_lose_context` no alcanza, porque no borra los canvas.
