@@ -14,10 +14,10 @@ export const BALANCE = {
   FIRST_EGG_DELAY_MS: 1000,
   /**
    * Los huevos caen este número de pisos por debajo del piso más alto desbloqueado (mínimo, el 1):
-   * con el Piso 4 abierto caen en el 2; con el 10, en el 8. Siempre sale el tier 1 de ese piso.
-   * Quedan abiertos 3 pisos: el de los huevos, uno intermedio y el más alto (los de abajo se cierran).
+   * con el Piso 3 abierto caen en el 2; con el 10, en el 9. Siempre sale el tier 1 de ese piso.
+   * Quedan abiertos 2 pisos: el de los huevos y el más alto (los de abajo se cierran).
    */
-  EGG_FLOOR_LAG: 2,
+  EGG_FLOOR_LAG: 1,
   /** Posiciones sorteadas para ubicar un huevo; gana la más alejada del resto. */
   SPAWN_CANDIDATES: 12,
 

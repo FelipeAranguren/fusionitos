@@ -16,8 +16,8 @@ describe('ventana de pestañas', () => {
   });
 
   it('en el piso más alto entran el de los huevos y el próximo a abrir', () => {
-    // Piso 10 abierto: los huevos caen en el 8. Se ven del 8 al 12.
-    expect(start(9, 7)).toBe(7);
+    // Piso 10 abierto: los huevos caen en el 9. Se ven del 8 al 12.
+    expect(start(9, 8)).toBe(7);
   });
 
   it('si el piso de los huevos queda lejos, manda el piso que se ve', () => {

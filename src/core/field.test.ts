@@ -43,12 +43,12 @@ describe('pisos desbloqueados', () => {
     // Con un hueco (solo posible con herramientas de debug), lo salta.
     state.discovered = [13];
     expect(adjacentOpenFloor(state, 0, 1)).toBe(2);
-    expect(adjacentOpenFloor(state, 2, -1)).toBe(0);
+    expect(adjacentOpenFloor(state, 2, -1)).toBeNull(); // el Piso 2 está bloqueado y el 1, cerrado
   });
 
   it('adjacentOpenFloor no lleva a los pisos cerrados', () => {
     const state = emptyState();
-    state.discovered = [7, 13, 19]; // Piso 4 abierto: los huevos caen en el 2 y el 1 cierra.
+    state.discovered = [7, 13]; // Piso 3 abierto: los huevos caen en el 2 y el 1 cierra.
     expect(adjacentOpenFloor(state, 1, -1)).toBeNull();
     expect(adjacentOpenFloor(state, 2, -1)).toBe(1);
   });
@@ -57,17 +57,17 @@ describe('pisos desbloqueados', () => {
 describe('pisos cerrados', () => {
   it('cierran los que quedan por debajo del piso de los huevos', () => {
     const state = emptyState();
-    state.discovered = [7, 13];
+    state.discovered = [7];
     expect(isFloorClosed(state, 0)).toBe(false);
-    state.discovered.push(19);
+    state.discovered.push(13);
     expect(isFloorClosed(state, 0)).toBe(true);
     expect(isFloorClosed(state, 1)).toBe(false);
   });
 
-  it('abierto es desbloqueado y no cerrado: quedan 3, el de los huevos, uno intermedio y el más alto', () => {
+  it('abierto es desbloqueado y no cerrado: quedan 2, el de los huevos y el más alto', () => {
     const state = emptyState();
     state.discovered = [7, 13, 19];
-    expect([0, 1, 2, 3, 4].map((floor) => isFloorOpen(state, floor))).toEqual([false, true, true, true, false]);
+    expect([0, 1, 2, 3, 4].map((floor) => isFloorOpen(state, floor))).toEqual([false, false, true, true, false]);
   });
 
   it('emptyClosedFloors vacía solo los cerrados y devuelve lo que tenían', () => {
@@ -75,7 +75,7 @@ describe('pisos cerrados', () => {
     const creature = addCreature(state, 2);
     const egg = addEgg(state, 0, 0.3, 0.3);
     addCreature(state, 8);
-    state.discovered = [7, 13, 19];
+    state.discovered = [7, 13];
     expect(emptyClosedFloors(state)).toEqual([{ floor: 0, entities: [creature, egg] }]);
     expect(state.floors[0].entities).toEqual([]);
     expect(state.floors[1].entities).toHaveLength(1);
