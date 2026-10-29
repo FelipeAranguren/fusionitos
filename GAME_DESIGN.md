@@ -7,7 +7,7 @@
 
 Juego web *merge idle* de un solo jugador, inspirado en el género de Cow Evolution / Evolution Galaxy, con una temática propia.
 Caen huevos, nacen criaturas, y al juntar dos iguales evolucionan a la siguiente. Cada criatura genera monedas sola.
-El objetivo es descubrir las 120 criaturas, subiendo de piso en piso por los 20 pisos. Terminar lleva unas 4 horas de juego seguido (§7.6).
+El objetivo es descubrir las 120 criaturas, subiendo de piso en piso por los 20 pisos. Terminar lleva unas 5 h 20 min de juego seguido (§7.6).
 
 - **Plataforma:** navegador, en escritorio y celular. Se juega con mouse o con el dedo.
 - **Stack:** Phaser 3 (3.90) + TypeScript + Vite. Tests con Vitest. Sin backend: el progreso se guarda en `localStorage`.
@@ -108,8 +108,10 @@ Todo el catálogo vive en `src/config/creatures.ts`. Cada criatura es `{ name, e
 ### 7.1 Ingreso pasivo — FASE 1
 
 ```
-ingreso(n) = INCOME_BASE × INCOME_GROWTH^(n−1)  =  1 × 2.5^(n−1)  monedas/segundo
+ingreso(n) = INCOME_BASE × INCOME_GROWTH^(n−1)  =  0.8 × 2.5^(n−1)  monedas/segundo
 ```
+
+- **`INCOME_BASE` era 1:** se bajó 20 % para que la partida dure más (§7.6).
 
 - **Fusionar siempre conviene:** dos criaturas de nivel `n` producen `2·ingreso(n)`, y la fusión produce `2.5·ingreso(n)`.
 - **Ingreso total:** la suma de todas las criaturas de **todos** los pisos. Los huevos no cuentan.
@@ -138,8 +140,8 @@ precio(n, k) = SHOP_BASE_PRICE × SHOP_PRICE_GROWTH^(n−1) × SHOP_PURCHASE_GRO
 
 - Solo se pueden comprar criaturas hasta **2 niveles por debajo** de la máxima descubierta (`n ≤ maxDescubierto − 2`).
 - La criatura comprada aparece en el campo de **su** piso, en un lugar libre y con un "pop". Respeta la capacidad.
-- **Repago** de la primera compra: `precio/ingreso = 70 × 1.016^(n−1)` segundos (de 1.2 min en n=1 a ~7.5 min en n=118, el máximo comprable).
-- **Por qué esos valores:** el precio tiene que crecer apenas más rápido que el ingreso (2.54 contra 2.5). Con 3, como había con 5 pisos, el repago crecía 20 % por nivel: desde el piso 6 la tienda ya no servía y la partida no terminaba (el simulador no pasaba del piso 8 en 48 h). Lo verifica `shop.test.ts`: `1 < SHOP_PRICE_GROWTH / INCOME_GROWTH < 1.05`. Con estos valores se termina en unas 4 h (§7.6).
+- **Repago** de la primera compra: `precio/ingreso = 87.5 × 1.016^(n−1)` segundos (de 1.5 min en n=1 a ~9.3 min en n=118, el máximo comprable).
+- **Por qué esos valores:** el precio tiene que crecer apenas más rápido que el ingreso (2.54 contra 2.5). Con 3, como había con 5 pisos, el repago crecía 20 % por nivel: desde el piso 6 la tienda ya no servía y la partida no terminaba (el simulador no pasaba del piso 8 en 48 h). Lo verifica `shop.test.ts`: `1 < SHOP_PRICE_GROWTH / INCOME_GROWTH < 1.05`. Con estos valores se termina en unas 5 h 20 min (§7.6).
 - **Interfaz:** el botón **🛒 Tienda** del HUD abre la tienda **del piso que se ve**, con una fila por cada criatura de ese piso:
   - **sin descubrir:** silueta, "???" y 🔒 (no arruina la sorpresa);
   - **descubierta pero todavía no a la venta:** aparece apagada, con "🔒 Descubrí N más";
@@ -166,126 +168,126 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
 
 | n | Piso · tier | Criatura | Ingreso/s | Pulso (cada 3 s) | Precio base F3 | Repago F3 |
 |---:|---|---|---:|---:|---:|---:|
-| 1 | 1 Jardín · 1 | 🐛 Oruga | 1 | +3 | 70 | 1.2 min |
-| 2 | 1 Jardín · 2 | 🐌 Caracol | 2.5 | +7.5 | 177 | 1.2 min |
-| 3 | 1 Jardín · 3 | 🐜 Hormiga | 6.2 | +18.7 | 451 | 1.2 min |
-| 4 | 1 Jardín · 4 | 🐞 Vaquita | 15.6 | +46.8 | 1.1K | 1.2 min |
-| 5 | 1 Jardín · 5 | 🐝 Abeja | 39 | +117 | 2.9K | 1.2 min |
-| 6 | 1 Jardín · 6 | 🦋 Mariposa | 97.6 | +292 | 7.4K | 1.3 min |
-| 7 | 2 Granja · 1 | 🐣 Pollito | 244 | +732 | 18.7K | 1.3 min |
-| 8 | 2 Granja · 2 | 🐓 Gallo | 610 | +1.8K | 47.7K | 1.3 min |
-| 9 | 2 Granja · 3 | 🐇 Conejo | 1.5K | +4.5K | 121K | 1.3 min |
-| 10 | 2 Granja · 4 | 🐖 Chancho | 3.8K | +11.4K | 308K | 1.3 min |
-| 11 | 2 Granja · 5 | 🐑 Oveja | 9.5K | +28.6K | 782K | 1.4 min |
-| 12 | 2 Granja · 6 | 🐄 Vaca | 23.8K | +71.5K | 1.9M | 1.4 min |
-| 13 | 3 Bosque · 1 | 🦔 Erizo | 59.6K | +178K | 5M | 1.4 min |
-| 14 | 3 Bosque · 2 | 🐿️ Ardilla | 149K | +447K | 12.8M | 1.4 min |
-| 15 | 3 Bosque · 3 | 🦉 Búho | 372K | +1.1M | 32.5M | 1.5 min |
-| 16 | 3 Bosque · 4 | 🦡 Tejón | 931K | +2.7M | 82.7M | 1.5 min |
-| 17 | 3 Bosque · 5 | 🦌 Ciervo | 2.3M | +6.9M | 210M | 1.5 min |
-| 18 | 3 Bosque · 6 | 🐻 Oso | 5.8M | +17.4M | 533M | 1.5 min |
-| 19 | 4 Océano · 1 | 🐠 Pez | 14.5M | +43.6M | 1.3B | 1.6 min |
-| 20 | 4 Océano · 2 | 🦀 Cangrejo | 36.3M | +109M | 3.4B | 1.6 min |
-| 21 | 4 Océano · 3 | 🐙 Pulpo | 90.9M | +272M | 8.7B | 1.6 min |
-| 22 | 4 Océano · 4 | 🐬 Delfín | 227M | +682M | 22.2B | 1.6 min |
-| 23 | 4 Océano · 5 | 🦈 Tiburón | 568M | +1.7B | 56.4B | 1.7 min |
-| 24 | 4 Océano · 6 | 🐋 Ballena | 1.4B | +4.2B | 143B | 1.7 min |
-| 25 | 5 Pantano · 1 | 🦟 Mosquito | 3.5B | +10.6B | 364B | 1.7 min |
-| 26 | 5 Pantano · 2 | 🐸 Rana | 8.8B | +26.6B | 924B | 1.7 min |
-| 27 | 5 Pantano · 3 | 🦎 Lagartija | 22.2B | +66.6B | 2.3T | 1.8 min |
-| 28 | 5 Pantano · 4 | 🐢 Tortuga | 55.5B | +166B | 5.9T | 1.8 min |
-| 29 | 5 Pantano · 5 | 🦛 Hipopótamo | 138B | +416B | 15.1T | 1.8 min |
-| 30 | 5 Pantano · 6 | 🐊 Cocodrilo | 346B | +1T | 38.4T | 1.8 min |
-| 31 | 6 Ciudad · 1 | 🐀 Rata | 867B | +2.6T | 97.7T | 1.9 min |
-| 32 | 6 Ciudad · 2 | 🐦 Gorrión | 2.1T | +6.5T | 248T | 1.9 min |
-| 33 | 6 Ciudad · 3 | 🦝 Mapache | 5.4T | +16.2T | 630T | 1.9 min |
-| 34 | 6 Ciudad · 4 | 🐈 Gato | 13.5T | +40.6T | 1.6Qa | 2.0 min |
-| 35 | 6 Ciudad · 5 | 🐕 Perro | 33.8T | +101T | 4Qa | 2.0 min |
-| 36 | 6 Ciudad · 6 | 🐩 Caniche | 84.7T | +254T | 10.3Qa | 2.0 min |
-| 37 | 7 Lago · 1 | 🐟 Trucha | 211T | +635T | 26.2Qa | 2.1 min |
-| 38 | 7 Lago · 2 | 🦆 Pato | 529T | +1.5Qa | 66.6Qa | 2.1 min |
-| 39 | 7 Lago · 3 | 🦦 Nutria | 1.3Qa | +3.9Qa | 169Qa | 2.1 min |
-| 40 | 7 Lago · 4 | 🦫 Castor | 3.3Qa | +9.9Qa | 430Qa | 2.2 min |
-| 41 | 7 Lago · 5 | 🦢 Cisne | 8.2Qa | +24.8Qa | 1Qi | 2.2 min |
-| 42 | 7 Lago · 6 | 🦩 Flamenco | 20.6Qa | +62Qa | 2.7Qi | 2.2 min |
-| 43 | 8 Pradera · 1 | 🐁 Ratón | 51.6Qa | +155Qa | 7Qi | 2.3 min |
-| 44 | 8 Pradera · 2 | 🐹 Hámster | 129Qa | +387Qa | 17.9Qi | 2.3 min |
-| 45 | 8 Pradera · 3 | 🦃 Pavo | 323Qa | +969Qa | 45.4Qi | 2.3 min |
-| 46 | 8 Pradera · 4 | 🐗 Jabalí | 807Qa | +2.4Qi | 115Qi | 2.4 min |
-| 47 | 8 Pradera · 5 | 🐃 Búfalo | 2Qi | +6Qi | 293Qi | 2.4 min |
-| 48 | 8 Pradera · 6 | 🐎 Mustang | 5Qi | +15.1Qi | 745Qi | 2.5 min |
-| 49 | 9 Desierto · 1 | 🪲 Escarabajo | 12.6Qi | +37.8Qi | 1.8Sx | 2.5 min |
-| 50 | 9 Desierto · 2 | 🦂 Escorpión | 31.5Qi | +94.6Qi | 4.8Sx | 2.5 min |
-| 51 | 9 Desierto · 3 | 🐍 Serpiente | 78.8Qi | +236Qi | 12.2Sx | 2.6 min |
-| 52 | 9 Desierto · 4 | 🦊 Fénec | 197Qi | +591Qi | 31Sx | 2.6 min |
-| 53 | 9 Desierto · 5 | 🦘 Canguro | 493Qi | +1.4Sx | 78.7Sx | 2.7 min |
-| 54 | 9 Desierto · 6 | 🐫 Camello | 1.2Sx | +3.6Sx | 200Sx | 2.7 min |
-| 55 | 10 Sabana · 1 | 🦓 Cebra | 3Sx | +9.2Sx | 508Sx | 2.7 min |
-| 56 | 10 Sabana · 2 | 🦒 Jirafa | 7.7Sx | +23.1Sx | 1.2Sp | 2.8 min |
-| 57 | 10 Sabana · 3 | 🐆 Leopardo | 19.2Sx | +57.7Sx | 3.2Sp | 2.8 min |
-| 58 | 10 Sabana · 4 | 🦏 Rinoceronte | 48.1Sx | +144Sx | 8.3Sp | 2.9 min |
-| 59 | 10 Sabana · 5 | 🐘 Elefante | 120Sx | +361Sx | 21.1Sp | 2.9 min |
-| 60 | 10 Sabana · 6 | 🦁 León | 300Sx | +902Sx | 53.7Sp | 3.0 min |
-| 61 | 11 Selva · 1 | 🦜 Loro | 752Sx | +2.2Sp | 136Sp | 3.0 min |
-| 62 | 11 Selva · 2 | 🐒 Mono | 1.8Sp | +5.6Sp | 346Sp | 3.1 min |
-| 63 | 11 Selva · 3 | 🦥 Perezoso | 4.7Sp | +14.1Sp | 880Sp | 3.1 min |
-| 64 | 11 Selva · 4 | 🐅 Tigre | 11.7Sp | +35.2Sp | 2.2oc | 3.2 min |
-| 65 | 11 Selva · 5 | 🦧 Orangután | 29.3Sp | +88.1Sp | 5.6oc | 3.2 min |
-| 66 | 11 Selva · 6 | 🦍 Gorila | 73.4Sp | +220Sp | 14.4oc | 3.3 min |
-| 67 | 12 Montaña · 1 | 🐐 Cabra | 183Sp | +551Sp | 36.6oc | 3.3 min |
-| 68 | 12 Montaña · 2 | 🐏 Carnero | 459Sp | +1.3oc | 93.1oc | 3.4 min |
-| 69 | 12 Montaña · 3 | 🦙 Llama | 1.1oc | +3.4oc | 236oc | 3.4 min |
-| 70 | 12 Montaña · 4 | 🐂 Yak | 2.8oc | +8.6oc | 600oc | 3.5 min |
-| 71 | 12 Montaña · 5 | 🦬 Bisonte | 7.1oc | +21.5oc | 1.5No | 3.5 min |
-| 72 | 12 Montaña · 6 | 🦅 Cóndor | 17.9oc | +53.8oc | 3.8No | 3.6 min |
-| 73 | 13 Polo · 1 | 🐧 Pingüino | 44.8oc | +134oc | 9.8No | 3.7 min |
-| 74 | 13 Polo · 2 | 🦭 Foca | 112oc | +336oc | 25No | 3.7 min |
-| 75 | 13 Polo · 3 | 🐺 Lobo ártico | 280oc | +840oc | 63.5No | 3.8 min |
-| 76 | 13 Polo · 4 | 🐳 Orca | 700oc | +2.1No | 161No | 3.8 min |
-| 77 | 13 Polo · 5 | ☃️ Muñeco de nieve | 1.7No | +5.2No | 409No | 3.9 min |
-| 78 | 13 Polo · 6 | 🦣 Mamut | 4.3No | +13.1No | 1Dc | 4.0 min |
-| 79 | 14 Noche · 1 | 🦗 Grillo | 10.9No | +32.8No | 2.6Dc | 4.0 min |
-| 80 | 14 Noche · 2 | 🕷️ Araña | 27.3No | +82.1No | 6.7Dc | 4.1 min |
-| 81 | 14 Noche · 3 | 🦨 Zorrillo | 68.4No | +205No | 17Dc | 4.2 min |
-| 82 | 14 Noche · 4 | 🦇 Murciélago | 171No | +513No | 43.3Dc | 4.2 min |
-| 83 | 14 Noche · 5 | 🌚 Luna nueva | 427No | +1.2Dc | 110Dc | 4.3 min |
-| 84 | 14 Noche · 6 | 🌝 Luna llena | 1Dc | +3.2Dc | 279Dc | 4.4 min |
-| 85 | 15 Prehistoria · 1 | 🪱 Lombriz | 2.6Dc | +8Dc | 709Dc | 4.4 min |
-| 86 | 15 Prehistoria · 2 | 🦐 Trilobite | 6.6Dc | +20Dc | 1.8Ud | 4.5 min |
-| 87 | 15 Prehistoria · 3 | 🐚 Amonite | 16.7Dc | +50.1Dc | 4.5Ud | 4.6 min |
-| 88 | 15 Prehistoria · 4 | 🦤 Dodo | 41.7Dc | +125Dc | 11.6Ud | 4.6 min |
-| 89 | 15 Prehistoria · 5 | 🦕 Saurópodo | 104Dc | +313Dc | 29.5Ud | 4.7 min |
-| 90 | 15 Prehistoria · 6 | 🦖 Tiranosaurio | 261Dc | +783Dc | 75Ud | 4.8 min |
-| 91 | 16 Abismo · 1 | 🦪 Ostra | 652Dc | +1.9Ud | 190Ud | 4.9 min |
-| 92 | 16 Abismo · 2 | 🐡 Pez globo | 1.6Ud | +4.8Ud | 484Ud | 4.9 min |
-| 93 | 16 Abismo · 3 | 🦞 Langosta | 4Ud | +12.2Ud | 1.2Dd | 5.0 min |
-| 94 | 16 Abismo · 4 | 🦑 Calamar gigante | 10.1Ud | +30.5Ud | 3.1Dd | 5.1 min |
-| 95 | 16 Abismo · 5 | 🧜 Sirena | 25.4Ud | +76.4Ud | 7.9Dd | 5.2 min |
-| 96 | 16 Abismo · 6 | 🐉 Leviatán | 63.7Ud | +191Ud | 20.1Dd | 5.3 min |
-| 97 | 17 Mansión · 1 | 🎃 Calabaza | 159Ud | +477Ud | 51.1Dd | 5.4 min |
-| 98 | 17 Mansión · 2 | 👻 Fantasma | 398Ud | +1.1Dd | 130Dd | 5.4 min |
-| 99 | 17 Mansión · 3 | 💀 Calavera | 995Ud | +2.9Dd | 330Dd | 5.5 min |
-| 100 | 17 Mansión · 4 | 🧟 Zombi | 2.4Dd | +7.4Dd | 838Dd | 5.6 min |
-| 101 | 17 Mansión · 5 | 🧛 Vampiro | 6.2Dd | +18.6Dd | 2.1Td | 5.7 min |
-| 102 | 17 Mansión · 6 | 🧙 Bruja | 15.5Dd | +46.6Dd | 5.4Td | 5.8 min |
-| 103 | 18 Reino mágico · 1 | 🧚 Hada | 38.8Dd | +116Dd | 13.7Td | 5.9 min |
-| 104 | 18 Reino mágico · 2 | 🧝 Elfo | 97.2Dd | +291Dd | 34.9Td | 6.0 min |
-| 105 | 18 Reino mágico · 3 | 👹 Ogro | 243Dd | +729Dd | 88.6Td | 6.1 min |
-| 106 | 18 Reino mágico · 4 | 🧞 Genio | 607Dd | +1.8Td | 225Td | 6.2 min |
-| 107 | 18 Reino mágico · 5 | 🦄 Unicornio | 1.5Td | +4.5Td | 572Td | 6.3 min |
-| 108 | 18 Reino mágico · 6 | 🐲 Dragón | 3.7Td | +11.3Td | 1.4Qad | 6.4 min |
-| 109 | 19 Juguetería · 1 | 🧸 Osito | 9.4Td | +28.4Td | 3.6Qad | 6.5 min |
-| 110 | 19 Juguetería · 2 | 🐴 Caballito | 23.7Td | +71.2Td | 9.3Qad | 6.6 min |
-| 111 | 19 Juguetería · 3 | 🪆 Matrioska | 59.3Td | +178Td | 23.8Qad | 6.7 min |
-| 112 | 19 Juguetería · 4 | 🤡 Payaso | 148Td | +445Td | 60.4Qad | 6.8 min |
-| 113 | 19 Juguetería · 5 | 👾 Pixelito | 370Td | +1.1Qad | 153Qad | 6.9 min |
-| 114 | 19 Juguetería · 6 | 🤖 Robot | 927Td | +2.7Qad | 390Qad | 7.0 min |
-| 115 | 20 Galaxia · 1 | 👽 Alien | 2.3Qad | +6.9Qad | 991Qad | 7.1 min |
-| 116 | 20 Galaxia · 2 | 🛸 Platillo volador | 5.7Qad | +17.3Qad | 2.5Qid | 7.2 min |
-| 117 | 20 Galaxia · 3 | ☄️ Cometa | 14.4Qad | +43.4Qad | 6.3Qid | 7.4 min |
-| 118 | 20 Galaxia · 4 | 🪐 Planeta viviente | 36.2Qad | +108Qad | 16.2Qid | 7.5 min |
-| 119 | 20 Galaxia · 5 | 🌞 Sol viviente | 90.5Qad | +271Qad | 41.2Qid | 7.6 min |
-| 120 | 20 Galaxia · 6 | 🌟 Supernova | 226Qad | +679Qad | 104Qid | 7.7 min |
+| 1 | 1 Jardín · 1 | 🐛 Oruga | 0.8 | +2.4 | 70 | 1.5 min |
+| 2 | 1 Jardín · 2 | 🐌 Caracol | 2 | +6 | 177 | 1.5 min |
+| 3 | 1 Jardín · 3 | 🐜 Hormiga | 5 | +15 | 451 | 1.5 min |
+| 4 | 1 Jardín · 4 | 🐞 Vaquita | 12.5 | +37.5 | 1.1K | 1.5 min |
+| 5 | 1 Jardín · 5 | 🐝 Abeja | 31.2 | +93.7 | 2.9K | 1.6 min |
+| 6 | 1 Jardín · 6 | 🦋 Mariposa | 78.1 | +234 | 7.4K | 1.6 min |
+| 7 | 2 Granja · 1 | 🐣 Pollito | 195 | +585 | 18.7K | 1.6 min |
+| 8 | 2 Granja · 2 | 🐓 Gallo | 488 | +1.4K | 47.7K | 1.6 min |
+| 9 | 2 Granja · 3 | 🐇 Conejo | 1.2K | +3.6K | 121K | 1.7 min |
+| 10 | 2 Granja · 4 | 🐖 Chancho | 3K | +9.1K | 308K | 1.7 min |
+| 11 | 2 Granja · 5 | 🐑 Oveja | 7.6K | +22.8K | 782K | 1.7 min |
+| 12 | 2 Granja · 6 | 🐄 Vaca | 19K | +57.2K | 1.9M | 1.7 min |
+| 13 | 3 Bosque · 1 | 🦔 Erizo | 47.6K | +143K | 5M | 1.8 min |
+| 14 | 3 Bosque · 2 | 🐿️ Ardilla | 119K | +357K | 12.8M | 1.8 min |
+| 15 | 3 Bosque · 3 | 🦉 Búho | 298K | +894K | 32.5M | 1.8 min |
+| 16 | 3 Bosque · 4 | 🦡 Tejón | 745K | +2.2M | 82.7M | 1.9 min |
+| 17 | 3 Bosque · 5 | 🦌 Ciervo | 1.8M | +5.5M | 210M | 1.9 min |
+| 18 | 3 Bosque · 6 | 🐻 Oso | 4.6M | +13.9M | 533M | 1.9 min |
+| 19 | 4 Océano · 1 | 🐠 Pez | 11.6M | +34.9M | 1.3B | 1.9 min |
+| 20 | 4 Océano · 2 | 🦀 Cangrejo | 29.1M | +87.3M | 3.4B | 2.0 min |
+| 21 | 4 Océano · 3 | 🐙 Pulpo | 72.7M | +218M | 8.7B | 2.0 min |
+| 22 | 4 Océano · 4 | 🐬 Delfín | 181M | +545M | 22.2B | 2.0 min |
+| 23 | 4 Océano · 5 | 🦈 Tiburón | 454M | +1.3B | 56.4B | 2.1 min |
+| 24 | 4 Océano · 6 | 🐋 Ballena | 1.1B | +3.4B | 143B | 2.1 min |
+| 25 | 5 Pantano · 1 | 🦟 Mosquito | 2.8B | +8.5B | 364B | 2.1 min |
+| 26 | 5 Pantano · 2 | 🐸 Rana | 7.1B | +21.3B | 924B | 2.2 min |
+| 27 | 5 Pantano · 3 | 🦎 Lagartija | 17.7B | +53.2B | 2.3T | 2.2 min |
+| 28 | 5 Pantano · 4 | 🐢 Tortuga | 44.4B | +133B | 5.9T | 2.2 min |
+| 29 | 5 Pantano · 5 | 🦛 Hipopótamo | 111B | +333B | 15.1T | 2.3 min |
+| 30 | 5 Pantano · 6 | 🐊 Cocodrilo | 277B | +832B | 38.4T | 2.3 min |
+| 31 | 6 Ciudad · 1 | 🐀 Rata | 693B | +2T | 97.7T | 2.3 min |
+| 32 | 6 Ciudad · 2 | 🐦 Gorrión | 1.7T | +5.2T | 248T | 2.4 min |
+| 33 | 6 Ciudad · 3 | 🦝 Mapache | 4.3T | +13T | 630T | 2.4 min |
+| 34 | 6 Ciudad · 4 | 🐈 Gato | 10.8T | +32.5T | 1.6Qa | 2.5 min |
+| 35 | 6 Ciudad · 5 | 🐕 Perro | 27.1T | +81.3T | 4Qa | 2.5 min |
+| 36 | 6 Ciudad · 6 | 🐩 Caniche | 67.7T | +203T | 10.3Qa | 2.5 min |
+| 37 | 7 Lago · 1 | 🐟 Trucha | 169T | +508T | 26.2Qa | 2.6 min |
+| 38 | 7 Lago · 2 | 🦆 Pato | 423T | +1.2Qa | 66.6Qa | 2.6 min |
+| 39 | 7 Lago · 3 | 🦦 Nutria | 1Qa | +3.1Qa | 169Qa | 2.7 min |
+| 40 | 7 Lago · 4 | 🦫 Castor | 2.6Qa | +7.9Qa | 430Qa | 2.7 min |
+| 41 | 7 Lago · 5 | 🦢 Cisne | 6.6Qa | +19.8Qa | 1Qi | 2.8 min |
+| 42 | 7 Lago · 6 | 🦩 Flamenco | 16.5Qa | +49.6Qa | 2.7Qi | 2.8 min |
+| 43 | 8 Pradera · 1 | 🐁 Ratón | 41.3Qa | +124Qa | 7Qi | 2.8 min |
+| 44 | 8 Pradera · 2 | 🐹 Hámster | 103Qa | +310Qa | 17.9Qi | 2.9 min |
+| 45 | 8 Pradera · 3 | 🦃 Pavo | 258Qa | +775Qa | 45.4Qi | 2.9 min |
+| 46 | 8 Pradera · 4 | 🐗 Jabalí | 646Qa | +1.9Qi | 115Qi | 3.0 min |
+| 47 | 8 Pradera · 5 | 🐃 Búfalo | 1.6Qi | +4.8Qi | 293Qi | 3.0 min |
+| 48 | 8 Pradera · 6 | 🐎 Mustang | 4Qi | +12.1Qi | 745Qi | 3.1 min |
+| 49 | 9 Desierto · 1 | 🪲 Escarabajo | 10Qi | +30.2Qi | 1.8Sx | 3.1 min |
+| 50 | 9 Desierto · 2 | 🦂 Escorpión | 25.2Qi | +75.7Qi | 4.8Sx | 3.2 min |
+| 51 | 9 Desierto · 3 | 🐍 Serpiente | 63.1Qi | +189Qi | 12.2Sx | 3.2 min |
+| 52 | 9 Desierto · 4 | 🦊 Fénec | 157Qi | +473Qi | 31Sx | 3.3 min |
+| 53 | 9 Desierto · 5 | 🦘 Canguro | 394Qi | +1.1Sx | 78.7Sx | 3.3 min |
+| 54 | 9 Desierto · 6 | 🐫 Camello | 986Qi | +2.9Sx | 200Sx | 3.4 min |
+| 55 | 10 Sabana · 1 | 🦓 Cebra | 2.4Sx | +7.3Sx | 508Sx | 3.4 min |
+| 56 | 10 Sabana · 2 | 🦒 Jirafa | 6.1Sx | +18.4Sx | 1.2Sp | 3.5 min |
+| 57 | 10 Sabana · 3 | 🐆 Leopardo | 15.4Sx | +46.2Sx | 3.2Sp | 3.5 min |
+| 58 | 10 Sabana · 4 | 🦏 Rinoceronte | 38.5Sx | +115Sx | 8.3Sp | 3.6 min |
+| 59 | 10 Sabana · 5 | 🐘 Elefante | 96.2Sx | +288Sx | 21.1Sp | 3.7 min |
+| 60 | 10 Sabana · 6 | 🦁 León | 240Sx | +722Sx | 53.7Sp | 3.7 min |
+| 61 | 11 Selva · 1 | 🦜 Loro | 601Sx | +1.8Sp | 136Sp | 3.8 min |
+| 62 | 11 Selva · 2 | 🐒 Mono | 1.5Sp | +4.5Sp | 346Sp | 3.8 min |
+| 63 | 11 Selva · 3 | 🦥 Perezoso | 3.7Sp | +11.2Sp | 880Sp | 3.9 min |
+| 64 | 11 Selva · 4 | 🐅 Tigre | 9.4Sp | +28.2Sp | 2.2oc | 4.0 min |
+| 65 | 11 Selva · 5 | 🦧 Orangután | 23.5Sp | +70.5Sp | 5.6oc | 4.0 min |
+| 66 | 11 Selva · 6 | 🦍 Gorila | 58.7Sp | +176Sp | 14.4oc | 4.1 min |
+| 67 | 12 Montaña · 1 | 🐐 Cabra | 146Sp | +440Sp | 36.6oc | 4.2 min |
+| 68 | 12 Montaña · 2 | 🐏 Carnero | 367Sp | +1.1oc | 93.1oc | 4.2 min |
+| 69 | 12 Montaña · 3 | 🦙 Llama | 918Sp | +2.7oc | 236oc | 4.3 min |
+| 70 | 12 Montaña · 4 | 🐂 Yak | 2.2oc | +6.8oc | 600oc | 4.4 min |
+| 71 | 12 Montaña · 5 | 🦬 Bisonte | 5.7oc | +17.2oc | 1.5No | 4.4 min |
+| 72 | 12 Montaña · 6 | 🦅 Cóndor | 14.3oc | +43oc | 3.8No | 4.5 min |
+| 73 | 13 Polo · 1 | 🐧 Pingüino | 35.8oc | +107oc | 9.8No | 4.6 min |
+| 74 | 13 Polo · 2 | 🦭 Foca | 89.6oc | +269oc | 25No | 4.6 min |
+| 75 | 13 Polo · 3 | 🐺 Lobo ártico | 224oc | +672oc | 63.5No | 4.7 min |
+| 76 | 13 Polo · 4 | 🐳 Orca | 560oc | +1.6No | 161No | 4.8 min |
+| 77 | 13 Polo · 5 | ☃️ Muñeco de nieve | 1.4No | +4.2No | 409No | 4.9 min |
+| 78 | 13 Polo · 6 | 🦣 Mamut | 3.5No | +10.5No | 1Dc | 5.0 min |
+| 79 | 14 Noche · 1 | 🦗 Grillo | 8.7No | +26.2No | 2.6Dc | 5.0 min |
+| 80 | 14 Noche · 2 | 🕷️ Araña | 21.8No | +65.6No | 6.7Dc | 5.1 min |
+| 81 | 14 Noche · 3 | 🦨 Zorrillo | 54.7No | +164No | 17Dc | 5.2 min |
+| 82 | 14 Noche · 4 | 🦇 Murciélago | 136No | +410No | 43.3Dc | 5.3 min |
+| 83 | 14 Noche · 5 | 🌚 Luna nueva | 342No | +1Dc | 110Dc | 5.4 min |
+| 84 | 14 Noche · 6 | 🌝 Luna llena | 855No | +2.5Dc | 279Dc | 5.4 min |
+| 85 | 15 Prehistoria · 1 | 🪱 Lombriz | 2.1Dc | +6.4Dc | 709Dc | 5.5 min |
+| 86 | 15 Prehistoria · 2 | 🦐 Trilobite | 5.3Dc | +16Dc | 1.8Ud | 5.6 min |
+| 87 | 15 Prehistoria · 3 | 🐚 Amonite | 13.3Dc | +40Dc | 4.5Ud | 5.7 min |
+| 88 | 15 Prehistoria · 4 | 🦤 Dodo | 33.4Dc | +100Dc | 11.6Ud | 5.8 min |
+| 89 | 15 Prehistoria · 5 | 🦕 Saurópodo | 83.5Dc | +250Dc | 29.5Ud | 5.9 min |
+| 90 | 15 Prehistoria · 6 | 🦖 Tiranosaurio | 208Dc | +626Dc | 75Ud | 6.0 min |
+| 91 | 16 Abismo · 1 | 🦪 Ostra | 522Dc | +1.5Ud | 190Ud | 6.1 min |
+| 92 | 16 Abismo · 2 | 🐡 Pez globo | 1.3Ud | +3.9Ud | 484Ud | 6.2 min |
+| 93 | 16 Abismo · 3 | 🦞 Langosta | 3.2Ud | +9.7Ud | 1.2Dd | 6.3 min |
+| 94 | 16 Abismo · 4 | 🦑 Calamar gigante | 8.1Ud | +24.4Ud | 3.1Dd | 6.4 min |
+| 95 | 16 Abismo · 5 | 🧜 Sirena | 20.3Ud | +61.1Ud | 7.9Dd | 6.5 min |
+| 96 | 16 Abismo · 6 | 🐉 Leviatán | 50.9Ud | +152Ud | 20.1Dd | 6.6 min |
+| 97 | 17 Mansión · 1 | 🎃 Calabaza | 127Ud | +382Ud | 51.1Dd | 6.7 min |
+| 98 | 17 Mansión · 2 | 👻 Fantasma | 318Ud | +955Ud | 130Dd | 6.8 min |
+| 99 | 17 Mansión · 3 | 💀 Calavera | 796Ud | +2.3Dd | 330Dd | 6.9 min |
+| 100 | 17 Mansión · 4 | 🧟 Zombi | 1.9Dd | +5.9Dd | 838Dd | 7.0 min |
+| 101 | 17 Mansión · 5 | 🧛 Vampiro | 4.9Dd | +14.9Dd | 2.1Td | 7.1 min |
+| 102 | 17 Mansión · 6 | 🧙 Bruja | 12.4Dd | +37.3Dd | 5.4Td | 7.2 min |
+| 103 | 18 Reino mágico · 1 | 🧚 Hada | 31.1Dd | +93.3Dd | 13.7Td | 7.4 min |
+| 104 | 18 Reino mágico · 2 | 🧝 Elfo | 77.7Dd | +233Dd | 34.9Td | 7.5 min |
+| 105 | 18 Reino mágico · 3 | 👹 Ogro | 194Dd | +583Dd | 88.6Td | 7.6 min |
+| 106 | 18 Reino mágico · 4 | 🧞 Genio | 486Dd | +1.4Td | 225Td | 7.7 min |
+| 107 | 18 Reino mágico · 5 | 🦄 Unicornio | 1.2Td | +3.6Td | 572Td | 7.8 min |
+| 108 | 18 Reino mágico · 6 | 🐲 Dragón | 3Td | +9.1Td | 1.4Qad | 8.0 min |
+| 109 | 19 Juguetería · 1 | 🧸 Osito | 7.5Td | +22.7Td | 3.6Qad | 8.1 min |
+| 110 | 19 Juguetería · 2 | 🐴 Caballito | 18.9Td | +56.9Td | 9.3Qad | 8.2 min |
+| 111 | 19 Juguetería · 3 | 🪆 Matrioska | 47.4Td | +142Td | 23.8Qad | 8.4 min |
+| 112 | 19 Juguetería · 4 | 🤡 Payaso | 118Td | +356Td | 60.4Qad | 8.5 min |
+| 113 | 19 Juguetería · 5 | 👾 Pixelito | 296Td | +890Td | 153Qad | 8.6 min |
+| 114 | 19 Juguetería · 6 | 🤖 Robot | 741Td | +2.2Qad | 390Qad | 8.8 min |
+| 115 | 20 Galaxia · 1 | 👽 Alien | 1.8Qad | +5.5Qad | 991Qad | 8.9 min |
+| 116 | 20 Galaxia · 2 | 🛸 Platillo volador | 4.6Qad | +13.9Qad | 2.5Qid | 9.0 min |
+| 117 | 20 Galaxia · 3 | ☄️ Cometa | 11.5Qad | +34.7Qad | 6.3Qid | 9.2 min |
+| 118 | 20 Galaxia · 4 | 🪐 Planeta viviente | 28.9Qad | +86.9Qad | 16.2Qid | 9.3 min |
+| 119 | 20 Galaxia · 5 | 🌞 Sol viviente | 72.4Qad | +217Qad | 41.2Qid | 9.5 min |
+| 120 | 20 Galaxia · 6 | 🌟 Supernova | 181Qad | +543Qad | 104Qid | 9.6 min |
 
 
 ### 7.6 Duración de la partida
@@ -294,39 +296,41 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
 
 | Piso | Se desbloquea | Lo que tarda ese piso |
 |---|---:|---:|
-| 1 Jardín | menos de 1 min | 1 min |
-| 2 Granja | 1 min | 4 min |
-| 3 Bosque | 6 min | 5 min |
-| 4 Océano | 12 min | 6 min |
-| 5 Pantano | 18 min | 7 min |
-| 6 Ciudad | 25 min | 7 min |
-| 7 Lago | 33 min | 8 min |
-| 8 Pradera | 41 min | 9 min |
-| 9 Desierto | 51 min | 10 min |
-| 10 Sabana | 1 h 1 min | 11 min |
-| 11 Selva | 1 h 12 min | 12 min |
-| 12 Montaña | 1 h 24 min | 13 min |
-| 13 Polo | 1 h 37 min | 14 min |
-| 14 Noche | 1 h 52 min | 16 min |
-| 15 Prehistoria | 2 h 8 min | 17 min |
-| 16 Abismo | 2 h 25 min | 19 min |
-| 17 Mansión | 2 h 45 min | 21 min |
-| 18 Reino mágico | 3 h 6 min | 23 min |
-| 19 Juguetería | 3 h 30 min | 25 min |
-| 20 Galaxia | 3 h 56 min | 23 min |
+| 1 Jardín | menos de 1 min | 2 min |
+| 2 Granja | 2 min | 5 min |
+| 3 Bosque | 8 min | 7 min |
+| 4 Océano | 15 min | 7 min |
+| 5 Pantano | 23 min | 8 min |
+| 6 Ciudad | 31 min | 9 min |
+| 7 Lago | 41 min | 10 min |
+| 8 Pradera | 51 min | 11 min |
+| 9 Desierto | 1 h 3 min | 12 min |
+| 10 Sabana | 1 h 15 min | 13 min |
+| 11 Selva | 1 h 29 min | 15 min |
+| 12 Montaña | 1 h 44 min | 16 min |
+| 13 Polo | 2 h 1 min | 18 min |
+| 14 Noche | 2 h 19 min | 20 min |
+| 15 Prehistoria | 2 h 39 min | 22 min |
+| 16 Abismo | 3 h 1 min | 24 min |
+| 17 Mansión | 3 h 25 min | 26 min |
+| 18 Reino mágico | 3 h 52 min | 29 min |
+| 19 Juguetería | 4 h 22 min | 32 min |
+| 20 Galaxia | 4 h 54 min | 29 min |
 
-- **Total: 4 h 19 min**, igual con otras semillas. Los primeros pisos salen en pocos minutos; los últimos, en unos 20 cada uno.
+- **Total: 5 h 23 min**, igual con otras semillas. Los primeros pisos salen en pocos minutos; los últimos, en unos 25 cada uno.
+- **Ingreso −20 %** (`INCOME_BASE` de 1 a 0.8, para que la partida dure más): antes terminaba en 4 h 19 min.
 - Cerrar los pisos que quedan por debajo del de los huevos (§8) no cambia la tabla: lo que tenían rendía muy poco.
 - La velocidad del jugador casi no cambia el resultado: lo que manda es la tienda.
+- **Huevos contra tienda:** por cantidad, el 76 % de las criaturas nuevas salen de huevos; por ingreso, apenas el 0.00008 %. Un huevo da el tier 1 de un piso 3 por debajo del más alto, unos 18 niveles por debajo de lo que vende la tienda (2.5¹⁸ ≈ 14 millones de veces menos). Bajar el ingreso no cambia esa proporción. Con los huevos 1 piso por debajo del más alto (`EGG_FLOOR_LAG` 1), aportarían el 3.6 % y la partida duraría 4 h 27 min.
 - **Referencia:** con la economía de 5 pisos, el simulador tardaba 1.5–2 h en algo que un jugador real terminaba en 30–60 min. Una persona atenta puede ir más rápido que el simulador.
-- **Para ajustar la duración:** `SHOP_BASE_PRICE` la cambia de forma casi proporcional y `SHOP_PRICE_GROWTH`, de forma exponencial. Algunas pruebas:
+- **Para ajustar la duración:** `SHOP_BASE_PRICE` y `INCOME_BASE` la cambian de forma casi proporcional; `SHOP_PRICE_GROWTH`, de forma exponencial. Algunas pruebas (con `INCOME_BASE` 0.8):
 
   | `SHOP_PRICE_GROWTH` | `SHOP_BASE_PRICE` | Partida completa |
   |---|---|---|
-  | 2.53 | 60 | 2 h 48 min |
-  | 2.54 | 60 | 3 h 43 min |
-  | **2.54** | **70** | **4 h 19 min** (actual) |
-  | 2.55 | 60 | 5 h |
+  | 2.53 | 60 | 3 h 29 min |
+  | 2.54 | 60 | 4 h 38 min |
+  | **2.54** | **70** | **5 h 23 min** (actual) |
+  | 2.55 | 60 | 6 h 14 min |
   | 3 | 15 | no termina (la de 5 pisos) |
 
 ## 8. Pisos — FASE 2
@@ -411,7 +415,7 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
 | `FIRST_EGG_DELAY_MS` | 1000 | Espera hasta el primer huevo de una partida nueva. |
 | `EGG_FLOOR_LAG` | 3 | Cuántos pisos por debajo del más alto desbloqueado caen los huevos (como mínimo, en el 1). |
 | `SPAWN_CANDIDATES` | 12 | Posiciones sorteadas para elegir dónde cae un huevo. |
-| `INCOME_BASE` | 1 | Ingreso del nivel 1 (monedas/s). |
+| `INCOME_BASE` | 0.8 | Ingreso del nivel 1 (monedas/s). Era 1 (§7.6). |
 | `INCOME_GROWTH` | 2.5 | Factor de ingreso por nivel. |
 | `COIN_POP_INTERVAL_MS` | 3000 | Cada cuánto suelta monedas una criatura. |
 | `MAX_TICK_MS` | 1000 | Tope de tiempo simulado por frame (evita saltos). |
@@ -462,6 +466,9 @@ Las constantes visuales (tamaños, velocidades de deambular, duraciones de anima
 ### Extra — navegación ✅
 - [x] El juego abre en el piso más alto desbloqueado.
 - [x] Barra de pestañas deslizable con el dedo (con impulso) y con la rueda del mouse, además de las flechas.
+
+### Extra — partida más lenta ✅
+- [x] Ingreso de todas las criaturas −20 % (`INCOME_BASE` 0.8): la partida pasa de 4 h 19 min a 5 h 23 min.
 
 ### Extra — acceso directo ✅
 - [x] Instalable como app (manifest e íconos): abre a pantalla completa, en vertical.

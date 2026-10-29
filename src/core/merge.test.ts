@@ -36,8 +36,9 @@ describe('merge en el mismo piso', () => {
     a.payoutMs = 1000;
     b.payoutMs = 2000;
     const result = mergeCreatures(state, a.id, b.id, rng);
-    expect(result.ok && result.collected).toBeCloseTo(7.5);
-    expect(state.coins).toBeCloseTo(7.5);
+    // Nivel 2: 2 monedas/s; entre las dos tenían 3 s acumulados.
+    expect(result.ok && result.collected).toBeCloseTo(6);
+    expect(state.coins).toBeCloseTo(6);
   });
 
   it('descubre la criatura nueva solo la primera vez', () => {

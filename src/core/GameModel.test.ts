@@ -34,8 +34,8 @@ describe('GameModel', () => {
     const popped = vi.fn();
     model.events.on('coinsPopped', popped);
     for (let i = 0; i < 3; i++) model.tick(1000);
-    expect(popped).toHaveBeenCalledWith({ floor: 0, entityId: creature.id, amount: 7.5 });
-    expect(model.coins).toBe(7.5);
+    expect(popped).toHaveBeenCalledWith({ floor: 0, entityId: creature.id, amount: expect.closeTo(6) });
+    expect(model.coins).toBeCloseTo(6);
   });
 
   it('hatch emite eggHatched y el descubrimiento solo la primera vez', () => {
@@ -69,7 +69,7 @@ describe('GameModel', () => {
     expect(model.merge(a.id, b.id).ok).toBe(true);
     expect(order).toEqual(['merged:1:7', 'unlocked:1', 'discovered:7']);
     expect(model.isFloorUnlocked(1)).toBe(true);
-    expect(model.incomePerSecond).toBe(244.140625);
+    expect(model.incomePerSecond).toBeCloseTo(195.3125);
   });
 
   it('si sube el piso de los huevos, el de abajo se cierra: se vacía y avisa con floorClosed', () => {
@@ -168,13 +168,13 @@ describe('GameModel', () => {
 
   it('applyOfflineEarnings suma las monedas y devuelve el resumen', () => {
     const state = emptyState();
-    addCreature(state, 3); // 6.25/s
+    addCreature(state, 3); // 5/s
     const model = modelWith(state);
     const report = model.applyOfflineEarnings(2 * 3_600_000);
-    expect(report?.amount).toBe(0.5 * 6.25 * 7200);
-    expect(model.coins).toBe(0.5 * 6.25 * 7200);
+    expect(report?.amount).toBeCloseTo(0.5 * 5 * 7200);
+    expect(model.coins).toBeCloseTo(0.5 * 5 * 7200);
     expect(model.applyOfflineEarnings(10_000)).toBeNull();
-    expect(model.coins).toBe(0.5 * 6.25 * 7200);
+    expect(model.coins).toBeCloseTo(0.5 * 5 * 7200);
   });
 
   it('debugAddCreature agrega en el piso de su nivel y respeta la capacidad', () => {

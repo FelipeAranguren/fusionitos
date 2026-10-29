@@ -20,8 +20,8 @@ export const BALANCE = {
   /** Posiciones sorteadas para ubicar un huevo; gana la más alejada del resto. */
   SPAWN_CANDIDATES: 12,
 
-  /** ingreso(n) = INCOME_BASE × INCOME_GROWTH^(n−1) monedas/s. */
-  INCOME_BASE: 1,
+  /** ingreso(n) = INCOME_BASE × INCOME_GROWTH^(n−1) monedas/s. Era 1: se bajó 20 % para alargar la partida. */
+  INCOME_BASE: 0.8,
   INCOME_GROWTH: 2.5,
   /** Cada cuánto una criatura suelta lo que produjo (texto "+X"). */
   COIN_POP_INTERVAL_MS: 3000,
