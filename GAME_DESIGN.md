@@ -329,12 +329,16 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
 
 ## 8. Pisos — FASE 2
 
-- **Pestañas:** al pie de la pantalla se ven **5 a la vez**, con una flecha ◀ ▶ a cada costado.
+- **Pestañas:** al pie de la pantalla hay una por piso y se ven **5 a la vez**, con una flecha ◀ ▶ a cada costado.
   - **Desbloqueada:** muestra la primera criatura del piso, su nombre y la ocupación ("7/12", en rojo si está lleno). Los nombres largos se achican para entrar.
   - **La del piso que se ve:** queda levantada y con borde blanco.
   - **La del piso de los huevos:** lleva un 🥚 en la esquina.
   - **Bloqueada:** muestra 🔒 y "Piso N". Tocarla no cambia de piso: en el próximo a abrir, avisa qué fusionar ("Para abrir el Piso 3: fusioná Vaca + Vaca"); en los de más arriba, solo el orden ("El Piso 14 se abre después del Piso 13"), para no adelantar criaturas.
-- **Qué pisos se ven:** la barra se acomoda sola al cambiar de piso. Deja el piso que se ve en el centro y, si entra, también el de los huevos: jugando en el piso más alto, se ven el de los huevos, el actual y el próximo a abrir.
+- **Qué pisos se ven:** la barra se acomoda sola al cambiar de piso (se desliza hasta ahí). Deja el piso que se ve en el centro y, si entra, también el de los huevos: jugando en el piso más alto, se ven el de los huevos, el actual y el próximo a abrir.
+- **Deslizar la barra:** se arrastra con el dedo (o se usa la rueda del mouse) para mirar otros pisos, sin cambiar de piso.
+  - Al soltarla se acomoda en una pestaña entera. Con un movimiento rápido sigue de largo (impulso); despacio, queda donde se la dejó.
+  - Pasado un extremo se resiste y vuelve.
+  - Un toque sin arrastrar elige la pestaña.
 - **Flechas de la barra:** corren la vista de a 5 pisos, sin cambiar de piso (sirven para mirar qué viene o volver a uno lejano). En los extremos se apagan.
 - **Otras formas de cambiar de piso:**
   - En escritorio, las flechas ← y → del teclado van al piso desbloqueado anterior o siguiente.
@@ -344,7 +348,7 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
 - **Huevos:** caen solo en el piso de los huevos (§4), también mientras se mira otro piso. En los demás pisos, la barra del huevo del HUD se reemplaza por "Los huevos caen en el Piso N ›".
 - **Ingreso:** todos los pisos generan ingreso aunque no se estén viendo; los "+X" se ven solo en el piso que está en pantalla.
 - **Avisos:** cuando se desbloquea un piso o le llega una criatura mientras no se lo ve, su pestaña late. Si la pestaña no está a la vista, late la flecha de ese lado.
-- **Al recargar** se vuelve al piso 1. El piso que se mira es estado de la vista, no se guarda.
+- **Al abrir el juego** (o al recargar) se ve el piso más alto desbloqueado, que es donde avanza la partida. El piso que se mira es estado de la vista, no se guarda.
 - **Al reiniciar** se vuelve al piso 1 y los demás se bloquean.
 
 ## 9. Interfaz — FASES 1 a 3
@@ -358,7 +362,7 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
 - **Banner** "¡Campo lleno!" mientras no quede lugar en el piso que se ve.
 - **Popups:** "¡Nueva criatura descubierta!", la tienda, la bienvenida tras una ausencia y la confirmación de reinicio. Se muestran de a uno y, mientras están abiertos, bloquean el campo, las pestañas y el teclado.
 - **Toasts:** avisos cortos ("¡Piso 2 desbloqueado!", "¡Ahora los huevos caen en el Piso 2: Granja!", "El Piso 2 está lleno", "¡Nivel máximo!", qué abre un piso bloqueado).
-- **Pie:** las pestañas de pisos (5 a la vista, con flechas) y, debajo, una pista de cómo jugar, los botones redondos 🔊 (efectos) y 🎵 (música) y el botón **Reiniciar** (abajo, para no tocarlo sin querer).
+- **Pie:** las pestañas de pisos (5 a la vista, deslizables y con flechas) y, debajo, una pista de cómo jugar, los botones redondos 🔊 (efectos) y 🎵 (música) y el botón **Reiniciar** (abajo, para no tocarlo sin querer).
 
 ## 10. Guardado — FASE 1
 
@@ -436,6 +440,10 @@ Las constantes visuales (tamaños, velocidades de deambular, duraciones de anima
 - [x] Los huevos suben de piso: caen 3 pisos por debajo del más alto abierto, y de cada huevo sale el tier 1 de su piso.
 - [x] Barra de pestañas con 5 pisos a la vista y flechas; 🥚 en la pestaña del piso de los huevos; atajo desde el HUD.
 - [x] Economía rebalanceada con un simulador (`npm run simulate`): unas 4 h para terminar.
+
+### Extra — navegación ✅
+- [x] El juego abre en el piso más alto desbloqueado.
+- [x] Barra de pestañas deslizable con el dedo (con impulso) y con la rueda del mouse, además de las flechas.
 
 ### Ideas futuras (sin fase asignada)
 Arte definitivo para las 120 criaturas, logros, tutorial guiado y PWA instalable.

@@ -12,7 +12,7 @@ export interface UiEvents {
 
 /** Estado de la vista compartido entre escenas. No se guarda. */
 export interface ViewState {
-  /** Piso que muestra el campo ahora (al recargar, el 1). */
+  /** Piso que muestra el campo ahora (al abrir el juego, el más alto desbloqueado). */
   floor: number;
   /** Ingreso offline ya sumado que falta mostrar; la UIScene abre el popup y lo limpia. */
   welcome: OfflineEarnings | null;

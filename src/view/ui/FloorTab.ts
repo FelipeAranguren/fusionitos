@@ -16,14 +16,17 @@ export interface FloorTabState {
 }
 
 const TABS = LAYOUT.tabs;
-const STRIP_LEFT = TABS.marginX + TABS.arrowWidth + TABS.gap;
-const STRIP_WIDTH = GAME_WIDTH - 2 * STRIP_LEFT;
-const TAB_WIDTH = (STRIP_WIDTH - TABS.gap * (TABS.visible - 1)) / TABS.visible;
+/** La tira de pestañas va entre las dos flechas. */
+export const STRIP_LEFT = TABS.marginX + TABS.arrowWidth + TABS.gap;
+export const STRIP_WIDTH = GAME_WIDTH - 2 * STRIP_LEFT;
+export const TAB_WIDTH = (STRIP_WIDTH - TABS.gap * (TABS.visible - 1)) / TABS.visible;
+/** Distancia entre los bordes izquierdos de dos pestañas vecinas. */
+export const TAB_PITCH = TAB_WIDTH + TABS.gap;
 const CENTER_Y = TABS.top + TABS.height / 2;
 
 /**
- * Pestaña de una de las posiciones visibles de la barra. Muestra el piso que le toca:
- * su primera criatura, el nombre y la ocupación; bloqueado, un candado.
+ * Pestaña de un piso: su primera criatura, el nombre y la ocupación; bloqueado, un candado.
+ * Va dentro de la tira deslizable (`TabStrip`), que es la que atiende los toques.
  */
 export class FloorTab extends Phaser.GameObjects.Container {
   private readonly panel: Phaser.GameObjects.Graphics;
@@ -31,47 +34,32 @@ export class FloorTab extends Phaser.GameObjects.Container {
   private readonly eggBadge: Phaser.GameObjects.Image;
   private readonly title: Phaser.GameObjects.Text;
   private readonly countText: Phaser.GameObjects.Text;
-  private shownFloor = -1;
+  private readonly tabFloor: number;
   /** Lo último dibujado, para redibujar solo cuando cambia. */
   private drawn = '';
-  private pressed = false;
 
-  constructor(scene: Phaser.Scene, slot: number, onSelect: (floor: number) => void) {
-    super(scene, STRIP_LEFT + TAB_WIDTH / 2 + slot * (TAB_WIDTH + TABS.gap), CENTER_Y);
+  /** Se ubica en la tira según su piso: la del Piso 1 empieza en x = 0. */
+  constructor(scene: Phaser.Scene, floor: number) {
+    super(scene, TAB_WIDTH / 2 + floor * TAB_PITCH, CENTER_Y);
+    this.tabFloor = floor;
     this.panel = scene.add.graphics();
     this.icon = scene.add.image(0, -32, TEXTURES.lock);
     this.eggBadge = scene.add.image(TAB_WIDTH / 2 - 26, -TABS.height / 2 + 26, TEXTURES.egg).setDisplaySize(40, 40);
     this.title = scene.add.text(0, 22, '', textStyle({ size: 28, weight: 700 })).setOrigin(0.5);
     this.countText = scene.add.text(0, 54, '', textStyle({ size: 26 })).setOrigin(0.5);
     this.add([this.panel, this.icon, this.title, this.countText, this.eggBadge]);
-
-    this.setSize(TAB_WIDTH, TABS.height);
-    this.setInteractive({ useHandCursor: true });
-    this.on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => {
-      this.pressed = true;
-    });
-    this.on(Phaser.Input.Events.GAMEOBJECT_POINTER_OUT, () => {
-      this.pressed = false;
-    });
-    this.on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => {
-      if (!this.pressed || this.shownFloor < 0) return;
-      this.pressed = false;
-      onSelect(this.shownFloor);
-    });
-    scene.add.existing(this);
   }
 
-  /** Piso que muestra ahora esta posición. */
   get floor(): number {
-    return this.shownFloor;
+    return this.tabFloor;
   }
 
-  render(floor: number, current: boolean, state: FloorTabState): void {
-    const key = `${floor}|${current}|${state.unlocked}|${state.count}|${state.full}|${state.eggs}`;
+  render(current: boolean, state: FloorTabState): void {
+    const key = `${current}|${state.unlocked}|${state.count}|${state.full}|${state.eggs}`;
     if (key === this.drawn) return;
     this.drawn = key;
-    this.shownFloor = floor;
 
+    const floor = this.tabFloor;
     const config = FLOORS[floor];
     const { radius } = TABS;
     const width = TAB_WIDTH;
@@ -117,7 +105,7 @@ export class FloorTab extends Phaser.GameObjects.Container {
   }
 }
 
-/** Flecha a un costado de la barra de pestañas: corre la ventana de pisos visibles. */
+/** Flecha a un costado de la barra de pestañas: la corre una página. */
 export class TabArrow extends Phaser.GameObjects.Container {
   private readonly panel: Phaser.GameObjects.Graphics;
   private enabled = true;

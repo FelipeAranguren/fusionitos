@@ -5,7 +5,7 @@ import { STRINGS } from '../config/strings.ts';
 import { ANIM, COLORS, GAME_WIDTH, LAYOUT } from '../config/visuals.ts';
 import { formatNumber } from '../core/format.ts';
 import { creatureConfig, floorConfig, unlockRequirementLevel } from '../core/levels.ts';
-import { pageTabWindow, tabWindowStart } from '../view/tabWindow.ts';
+import { tabWindowStart } from '../view/tabWindow.ts';
 import { TEXTURES } from '../view/textures.ts';
 import { Button } from '../view/ui/Button.ts';
 import { FloorTab, TabArrow } from '../view/ui/FloorTab.ts';
@@ -13,6 +13,7 @@ import { IconToggle } from '../view/ui/IconToggle.ts';
 import type { Modal } from '../view/ui/Modal.ts';
 import { openConfirmPopup, openDiscoveryPopup, openWelcomePopup } from '../view/ui/popups.ts';
 import { ShopPopup } from '../view/ui/ShopPopup.ts';
+import { TabStrip } from '../view/ui/TabStrip.ts';
 import { textStyle } from '../view/ui/textStyle.ts';
 import { ToastQueue } from '../view/ui/Toast.ts';
 import type { GameContext } from './context.ts';
@@ -51,10 +52,7 @@ export class UIScene extends Phaser.Scene {
   private eggHintText!: Phaser.GameObjects.Text;
   private banner!: Phaser.GameObjects.Container;
   private bannerTween: Phaser.Tweens.Tween | null = null;
-  private tabs: FloorTab[] = [];
-  private tabArrows: TabArrow[] = [];
-  /** Primer piso de la barra de pestañas. */
-  private tabsFirst = 0;
+  private tabStrip!: TabStrip;
   private toasts!: ToastQueue;
   private modal: Modal | null = null;
   private shop: ShopPopup | null = null;
@@ -146,7 +144,8 @@ export class UIScene extends Phaser.Scene {
       this.eggBar.setVisible(eggsHere);
       this.eggHint.setVisible(!eggsHere);
       this.eggHintText.setText(STRINGS.eggsFallOn(eggFloor));
-      this.tabsFirst = tabWindowStart(floor, eggFloor);
+      // Al arrancar se ubica de una; después, la barra se desliza hasta ahí.
+      this.tabStrip.scrollTo(tabWindowStart(floor, eggFloor), shown.floor >= 0);
     }
     // Sube al desbloquear pisos; al reiniciar baja, y eso no se avisa.
     const eggFloorRose = eggFloorChanged && shown.eggFloor >= 0 && eggFloor > shown.eggFloor;
@@ -184,7 +183,7 @@ export class UIScene extends Phaser.Scene {
     shown.full = full;
 
     this.updateTabs(floor, eggFloor);
-    if (eggFloorRose) this.attention(eggFloor);
+    if (eggFloorRose) this.tabStrip.attention(eggFloor);
   }
 
   /** Botones y pestañas visibles, con su centro en coordenadas del juego (para el hook de debug). */
@@ -200,7 +199,9 @@ export class UIScene extends Phaser.Scene {
               : object instanceof IconToggle || object instanceof TabArrow || object === this.eggHint
                 ? object.name
                 : null;
-        if (label && object instanceof Phaser.GameObjects.Container && object.visible && object.input?.enabled) {
+        // Las pestañas no atienden toques propios (lo hace la tira): valen las que están a la vista.
+        const touchable = object instanceof FloorTab ? this.tabStrip.isVisible(object.floor) : object.input?.enabled;
+        if (label && object instanceof Phaser.GameObjects.Container && object.visible && touchable) {
           // El área de toque está centrada en el contenedor (getBounds no cuenta los Graphics de adentro).
           const { tx, ty } = object.getWorldTransformMatrix();
           buttons.push({ label, x: tx, y: ty });
@@ -337,12 +338,13 @@ export class UIScene extends Phaser.Scene {
   }
 
   private createTabs(): void {
-    this.tabsFirst = 0;
-    this.tabs = Array.from({ length: LAYOUT.tabs.visible }, (_, slot) => new FloorTab(this, slot, (floor) => this.onTabSelected(floor)));
-    this.tabArrows = ([-1, 1] as const).map((side) => new TabArrow(this, side, () => this.pageTabs(side)));
+    this.tabStrip = new TabStrip(this, {
+      onSelect: (floor) => this.onTabSelected(floor),
+      onPage: () => this.ctx.audio.play('click'),
+    });
   }
 
-  /** Pestañas a la vista y flechas; de paso, avisa lo que pasa en otros pisos. */
+  /** Pestañas y flechas; de paso, avisa lo que pasa en otros pisos. */
   private updateTabs(floor: number, eggFloor: number): void {
     const { model } = this.ctx;
     const shown = this.shown;
@@ -354,39 +356,16 @@ export class UIScene extends Phaser.Scene {
       const opened = shown.unlocked[index] === false && unlocked;
       const previous = shown.counts[index];
       const arrived = previous !== undefined && count > previous && index !== floor && index !== eggFloor && unlocked;
-      if (opened || arrived) this.attention(index);
+      if (opened || arrived) this.tabStrip.attention(index);
       shown.counts[index] = count;
       shown.unlocked[index] = unlocked;
     }
-    this.tabs.forEach((tab, slot) => {
-      const index = this.tabsFirst + slot;
-      tab.render(index, index === floor, {
-        unlocked: shown.unlocked[index],
-        count: shown.counts[index],
-        full: model.isFloorFull(index),
-        eggs: index === eggFloor,
-      });
-    });
-    const [previous, next] = this.tabArrows;
-    previous.setEnabled(this.tabsFirst > 0);
-    next.setEnabled(this.tabsFirst + this.tabs.length < FLOORS.length);
-  }
-
-  /** Hace saltar la pestaña de un piso; si quedó fuera de la vista, la flecha de ese lado. */
-  private attention(floor: number): void {
-    const slot = floor - this.tabsFirst;
-    if (slot < 0) this.tabArrows[0].pulse();
-    else if (slot >= this.tabs.length) this.tabArrows[1].pulse();
-    else this.tabs[slot].pulse();
-  }
-
-  /** Las flechas corren la barra de a una página, sin cambiar de piso. */
-  private pageTabs(direction: -1 | 1): void {
-    if (this.modal) return;
-    const first = pageTabWindow(this.tabsFirst, direction);
-    if (first === this.tabsFirst) return;
-    this.tabsFirst = first;
-    this.ctx.audio.play('click');
+    this.tabStrip.render(floor, (index) => ({
+      unlocked: shown.unlocked[index],
+      count: shown.counts[index],
+      full: model.isFloorFull(index),
+      eggs: index === eggFloor,
+    }));
   }
 
   private onTabSelected(floor: number): void {

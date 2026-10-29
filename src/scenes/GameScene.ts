@@ -42,7 +42,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   init(data: { floor?: number }): void {
-    this.floorIndex = data.floor ?? 0;
+    this.floorIndex = data.floor ?? this.ctx.view.floor;
     // La instancia se reutiliza al reiniciar: las vistas viejas ya las destruyó Phaser.
     this.creatures.clear();
     this.eggs.clear();

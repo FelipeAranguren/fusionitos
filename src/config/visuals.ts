@@ -15,7 +15,7 @@ export const LAYOUT = {
   /** Sobre el borde superior del campo: así no tapa lo que está arriba del campo. */
   bannerY: 300,
   toastY: 1580,
-  /** Pestañas de pisos, al pie: se ven `visible` a la vez, con flechas a los costados para correrlas. */
+  /** Pestañas de pisos, al pie: se ven `visible` a la vez; la barra se desliza y tiene flechas a los costados. */
   tabs: { top: 1668, height: 160, marginX: 16, gap: 10, radius: 34, visible: 5, arrowWidth: 84 },
   /** Última línea: la pista a la izquierda y el botón de reiniciar a la derecha. */
   hintX: 44,
@@ -74,6 +74,22 @@ export const ANIM = {
   toastMs: 2300,
   /** Fundido del campo al cambiar de piso (cada mitad). */
   floorFadeMs: 140,
+} as const;
+
+/** Deslizamiento de la barra de pestañas. Las posiciones se miden en pestañas. */
+export const TAB_SCROLL = {
+  /** px que se mueve el dedo antes de que el toque pase a ser arrastre. */
+  dragThreshold: 24,
+  /** Pasado un extremo, la barra sigue al dedo solo en esta proporción. */
+  overscroll: 0.35,
+  /** Impulso al soltar: la barra avanza lo que el dedo recorrería, a su velocidad, en este tiempo. */
+  flingMs: 250,
+  /** La velocidad del dedo se mide con sus movimientos de los últimos ms. */
+  velocityWindowMs: 100,
+  /** Duración del acomodo (al soltar, con las flechas o al cambiar de piso). */
+  snapMs: 320,
+  /** Giro de la rueda del mouse que corre una pestaña. */
+  wheelStep: 100,
 } as const;
 
 export const DEPTH = {

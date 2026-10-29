@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pageTabWindow, tabWindowStart } from './tabWindow.ts';
+import { dragTabPosition, pageTabWindow, settleTabPosition, tabWindowStart } from './tabWindow.ts';
 
 // 20 pisos, 5 pestañas a la vista; los pisos son índices (0 = Piso 1).
 const start = (current: number, eggFloor: number) => tabWindowStart(current, eggFloor, 20, 5);
@@ -54,5 +54,39 @@ describe('ventana de pestañas', () => {
   it('con menos pisos que pestañas no se mueve', () => {
     expect(tabWindowStart(2, 0, 3, 5)).toBe(0);
     expect(pageTabWindow(0, 1, 3, 5)).toBe(0);
+    expect(settleTabPosition(0, 1, 3, 5, 250)).toBe(0);
+  });
+});
+
+describe('barra deslizable', () => {
+  const drag = (position: number) => dragTabPosition(position, 20, 5, 0.35);
+  const settle = (position: number, velocity: number) => settleTabPosition(position, velocity, 20, 5, 250);
+
+  it('al arrastrar sigue al dedo', () => {
+    expect(drag(0)).toBe(0);
+    expect(drag(7.4)).toBe(7.4);
+    expect(drag(15)).toBe(15);
+  });
+
+  it('pasado un extremo se resiste', () => {
+    expect(drag(-2)).toBeCloseTo(-0.7);
+    expect(drag(17)).toBeCloseTo(15.7);
+  });
+
+  it('al soltar despacio se acomoda en la pestaña más cercana', () => {
+    expect(settle(3.4, 0)).toBe(3);
+    expect(settle(3.6, 0)).toBe(4);
+  });
+
+  it('al soltar con impulso sigue de largo', () => {
+    // 0.01 pestañas/ms durante 250 ms: 2.5 pestañas más.
+    expect(settle(3.2, 0.01)).toBe(6);
+    expect(settle(3.2, -0.01)).toBe(1);
+  });
+
+  it('se acomoda dentro de los extremos', () => {
+    expect(settle(14.8, 0.05)).toBe(15);
+    expect(settle(-0.6, 0)).toBe(0);
+    expect(settle(15.6, 0)).toBe(15);
   });
 });

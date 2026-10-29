@@ -59,9 +59,11 @@ src/main.ts   arma GameModel + SaveManager + Phaser.Game y conecta el guardado
 - El modelo guarda las posiciones **normalizadas** (0..1 dentro del campo). La conversión a píxeles se hace solo en `src/view/fieldSpace.ts`.
 - Las criaturas se dibujan por clave de textura. `BootScene` carga las `image` del catálogo y genera las texturas fijas (huevo, íconos, moneda). Las de criaturas y decoración se generan desde el emoji la primera vez que se usan: pedí la clave con `ensureCreatureTexture(scene, n)` o `ensureDecorTexture(scene, emoji)` (`src/view/textures.ts`), nunca armándola a mano.
 - **Texturas dibujadas por código:** pasan por `addGeneratedTexture`, que en WebGL las registra como píxeles (`addUint8Array`) y no como canvas. Con la pestaña en segundo plano, el celular puede perder la GPU y con ella el contenido de los canvas: los emojis desaparecían. Al recuperar el contexto, Phaser vuelve a subir cada textura desde sus píxeles.
-- **Barra de pestañas:** 5 `FloorTab` fijas que muestran pisos según una ventana (`src/view/tabWindow.ts`, puro y testeado), más dos `TabArrow`. `UIScene` recalcula la ventana cuando cambia el piso que se ve o el de los huevos.
+- **Barra de pestañas:** `TabStrip` (`src/view/ui/TabStrip.ts`) es una tira con una `FloorTab` por piso, recortada con una máscara entre dos `TabArrow`.
+  - Los toques los atiende una zona que cubre la tira, no cada pestaña: así se distingue tocar una pestaña de deslizar la barra (arrastre con impulso, rueda del mouse).
+  - Dónde se acomoda lo decide `src/view/tabWindow.ts` (puro y testeado). `UIScene` la lleva a `tabWindowStart` cuando cambia el piso que se ve o el de los huevos.
 - **Piso que se ve:**
-  - Es estado de la vista (`ctx.view.floor`), no del juego, así que no se guarda.
+  - Es estado de la vista (`ctx.view.floor`), no del juego, así que no se guarda. Al abrir el juego es el más alto desbloqueado (`main.ts`).
   - Para cambiarlo, se emite `ui.emit('selectFloor', { floor })`. `GameScene` valida que esté desbloqueado y se reinicia con `scene.restart({ floor })`.
   - Las escenas leen `view.floor` en `update()`.
 

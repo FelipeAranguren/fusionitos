@@ -37,7 +37,8 @@ async function start(): Promise<void> {
   const loaded = saves.load();
   const model = new GameModel(loaded?.state);
   const ui = new Emitter<UiEvents>();
-  const view: ViewState = { floor: 0, welcome: null };
+  // Se abre en el piso más alto desbloqueado, que es donde avanza la partida.
+  const view: ViewState = { floor: model.highestUnlockedFloor, welcome: null };
   let warnedSaveFailure = false;
   // Con la pestaña oculta el juego está en pausa: el guardado queda fechado en el momento en que se ocultó,
   // así el ingreso offline cuenta toda la ausencia aunque después se cierre la pestaña.
@@ -67,8 +68,9 @@ async function start(): Promise<void> {
   if (loaded) welcomeBack(Date.now() - loaded.savedAt);
 
   document.title = STRINGS.title;
-  const pageColor = floorConfig(0).pageColor;
+  const pageColor = floorConfig(view.floor).pageColor;
   document.body.style.backgroundColor = pageColor;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', pageColor);
   await waitForFonts(2000);
 
   const game = new Phaser.Game({
