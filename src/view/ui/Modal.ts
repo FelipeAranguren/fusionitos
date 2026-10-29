@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { COLORS, GAME_HEIGHT, GAME_WIDTH } from '../../config/visuals.ts';
+import { roundedRect } from './shapes.ts';
 
 /**
  * Popup modal: oscurece la pantalla y muestra una tarjeta centrada. El fondo es interactivo,
@@ -18,10 +19,9 @@ export class Modal extends Phaser.GameObjects.Container {
     this.dim = scene.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, COLORS.dim, COLORS.dimAlpha).setOrigin(0);
     this.dim.setInteractive();
 
-    const background = scene.add.graphics();
-    background.fillStyle(0x000000, 0.25).fillRoundedRect(-width / 2, -height / 2 + 16, width, height, 56);
-    background.fillStyle(COLORS.card, 1).fillRoundedRect(-width / 2, -height / 2, width, height, 56);
-    this.card = scene.add.container(GAME_WIDTH / 2, GAME_HEIGHT / 2, [background]);
+    const shadow = roundedRect(scene, 0, 16, width, height, 56, 0x000000, 0.25);
+    const background = roundedRect(scene, 0, 0, width, height, 56, COLORS.card);
+    this.card = scene.add.container(GAME_WIDTH / 2, GAME_HEIGHT / 2, [shadow, background]);
 
     this.add([this.dim, this.card]);
     this.setDepth(1000);

@@ -23,11 +23,11 @@ export class IconButton extends Phaser.GameObjects.Container {
     super(scene, x, y);
     const { size } = options;
     const radius = size / 2;
-    const disc = scene.add.graphics();
-    disc.fillStyle(0x000000, 0.25).fillCircle(0, 5, radius);
-    disc.fillStyle(options.color ?? COLORS.neutral, 1).fillCircle(0, 0, radius);
+    // Círculos como formas (contorno calculado una vez), no con Graphics: ver shapes.ts.
+    const shadow = scene.add.circle(0, 5, radius, 0x000000, 0.25);
+    const disc = scene.add.circle(0, 0, radius, options.color ?? COLORS.neutral, 1);
     this.icon = scene.add.image(0, 0, options.icon).setDisplaySize(size * 0.62, size * 0.62);
-    this.add([disc, this.icon]);
+    this.add([shadow, disc, this.icon]);
     this.setName(options.name);
     this.onPressed = options.onPress;
 

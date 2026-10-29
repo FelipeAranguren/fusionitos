@@ -69,7 +69,12 @@ export class TabStrip {
 
   /** Dibuja cada pestaña con el estado de su piso. Se llama en cada frame: solo redibuja lo que cambió. */
   render(current: number, stateOf: (floor: number) => FloorTabState): void {
-    for (const tab of this.tabs) tab.render(tab.floor === current, stateOf(tab.floor));
+    // Solo se dibujan las que asoman entre las flechas: el resto, aunque la máscara las tape, costaría igual.
+    const position = this.position;
+    for (const tab of this.tabs) {
+      tab.render(tab.floor === current, stateOf(tab.floor));
+      tab.setVisible(tab.floor + 1 > position && tab.floor < position + TABS.visible);
+    }
     const [previous, next] = this.arrows;
     previous.setEnabled(this.goal > 0);
     next.setEnabled(this.goal < lastTabStart());

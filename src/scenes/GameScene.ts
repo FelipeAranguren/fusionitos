@@ -12,6 +12,7 @@ import { EggView } from '../view/EggView.ts';
 import { Effects } from '../view/effects.ts';
 import { clampToField, toField, toWorld } from '../view/fieldSpace.ts';
 import { TEXTURES, ensureDecorTexture } from '../view/textures.ts';
+import { RoundedFrame, roundedRect } from '../view/ui/shapes.ts';
 import { textStyle } from '../view/ui/textStyle.ts';
 import type { GameContext } from './context.ts';
 
@@ -98,11 +99,11 @@ export class GameScene extends Phaser.Scene {
 
   private drawField(floor: FloorConfig): void {
     const { field, fieldRadius } = LAYOUT;
-    const g = this.add.graphics().setDepth(-10);
-    g.fillStyle(0x000000, 0.25).fillRoundedRect(field.x, field.y + 14, field.width, field.height, fieldRadius);
-    g.fillStyle(floor.fieldColor, 1).fillRoundedRect(field.x, field.y, field.width, field.height, fieldRadius);
-    g.lineStyle(10, floor.accentColor, 0.55);
-    g.strokeRoundedRect(field.x + 5, field.y + 5, field.width - 10, field.height - 10, fieldRadius - 5);
+    const x = field.x + field.width / 2;
+    const y = field.y + field.height / 2;
+    roundedRect(this, x, y + 14, field.width, field.height, fieldRadius, 0x000000, 0.25).setDepth(-10);
+    roundedRect(this, x, y, field.width, field.height, fieldRadius, floor.fieldColor).setDepth(-10);
+    new RoundedFrame(this, x, y, field.width, field.height, fieldRadius, 10, floor.accentColor, 0.55).setDepth(-10);
 
     // Decoración tenue, siempre en el mismo lugar para cada piso.
     const rng = mulberry32(this.floorIndex + 1);

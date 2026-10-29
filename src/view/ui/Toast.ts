@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
 import { ANIM, GAME_WIDTH, LAYOUT } from '../../config/visuals.ts';
+import { roundedRect } from './shapes.ts';
 import { textStyle } from './textStyle.ts';
 
 /** Avisos cortos en una píldora, de a uno por vez. */
@@ -36,8 +37,7 @@ export class ToastQueue {
     const label = this.scene.add.text(0, 0, text, style).setOrigin(0.5);
     const width = label.width + 80;
     const height = label.height + 36;
-    const background = this.scene.add.graphics();
-    background.fillStyle(0x000000, 0.75).fillRoundedRect(-width / 2, -height / 2, width, height, Math.min(height / 2, 44));
+    const background = roundedRect(this.scene, 0, 0, width, height, Math.min(height / 2, 44), 0x000000, 0.75);
     const toast = this.scene.add.container(GAME_WIDTH / 2, LAYOUT.toastY + 20, [background, label]);
     toast.setDepth(900).setAlpha(0).setData('text', text);
     this.current = toast;

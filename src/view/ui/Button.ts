@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { COLORS } from '../../config/visuals.ts';
+import { roundedRect } from './shapes.ts';
 import { textStyle } from './textStyle.ts';
 
 export interface ButtonOptions {
@@ -17,11 +18,8 @@ export interface ButtonOptions {
 
 /** Botón redondeado. Se activa al soltar sobre él, solo si se apretó sobre él y está habilitado. */
 export class Button extends Phaser.GameObjects.Container {
-  // Ojo: `width`/`height` ya son de Container; por eso estos nombres.
-  private readonly buttonWidth: number;
-  private readonly buttonHeight: number;
   private readonly baseColor: number;
-  private readonly panel: Phaser.GameObjects.Graphics;
+  private readonly face: Phaser.GameObjects.Rectangle;
   private readonly caption: Phaser.GameObjects.Text;
   private readonly iconImage: Phaser.GameObjects.Image | null;
   private enabled = true;
@@ -29,14 +27,17 @@ export class Button extends Phaser.GameObjects.Container {
 
   constructor(scene: Phaser.Scene, x: number, y: number, options: ButtonOptions) {
     super(scene, x, y);
-    this.buttonWidth = options.width;
-    this.buttonHeight = options.height;
     this.baseColor = options.color;
     const fontSize = options.fontSize ?? 44;
-    this.panel = scene.add.graphics();
+    const { width, height } = options;
+    const radius = height / 2;
+    const shadow = roundedRect(scene, 0, 8, width, height, radius, 0x000000, 0.25);
+    this.face = roundedRect(scene, 0, 0, width, height, radius, this.baseColor);
+    // Brillo en la mitad de arriba.
+    const shine = roundedRect(scene, 0, -height / 2 + 6 + height * 0.21, width - 24, height * 0.42, radius * 0.8, 0xffffff, 0.18);
     this.caption = scene.add.text(0, 0, options.label, textStyle({ size: fontSize, weight: 700 })).setOrigin(0.5);
     this.iconImage = options.icon ? scene.add.image(0, 0, options.icon).setDisplaySize(fontSize * 1.15, fontSize * 1.15) : null;
-    this.add(this.iconImage ? [this.panel, this.iconImage, this.caption] : [this.panel, this.caption]);
+    this.add([shadow, this.face, shine, ...(this.iconImage ? [this.iconImage] : []), this.caption]);
     if (options.name) this.setName(options.name);
     this.draw();
     this.layoutContent();
@@ -86,15 +87,7 @@ export class Button extends Phaser.GameObjects.Container {
   }
 
   private draw(): void {
-    const width = this.buttonWidth;
-    const height = this.buttonHeight;
-    const radius = height / 2;
-    const left = -width / 2;
-    const top = -height / 2;
-    const g = this.panel.clear();
-    g.fillStyle(0x000000, 0.25).fillRoundedRect(left, top + 8, width, height, radius);
-    g.fillStyle(this.enabled ? this.baseColor : COLORS.disabled, 1).fillRoundedRect(left, top, width, height, radius);
-    g.fillStyle(0xffffff, 0.18).fillRoundedRect(left + 12, top + 6, width - 24, height * 0.42, radius * 0.8);
+    this.face.setFillStyle(this.enabled ? this.baseColor : COLORS.disabled, 1);
     const alpha = this.enabled ? 1 : 0.8;
     this.caption.setAlpha(alpha);
     this.iconImage?.setAlpha(alpha);

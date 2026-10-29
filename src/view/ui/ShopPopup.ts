@@ -9,6 +9,7 @@ import { creatureConfig, floorConfig, levelOf } from '../../core/levels.ts';
 import { TEXTURES, ensureCreatureTexture } from '../textures.ts';
 import { Button } from './Button.ts';
 import { Modal } from './Modal.ts';
+import { roundedRect } from './shapes.ts';
 import { textStyle } from './textStyle.ts';
 
 const CARD = { width: 900, height: 1440 } as const;
@@ -104,8 +105,7 @@ class ShopRow {
     this.model = model;
     this.level = level;
     this.onPurchased = onPurchased;
-    const background = scene.add.graphics();
-    background.fillStyle(COLORS.cardRow, 1).fillRoundedRect(-ROW.width / 2, y - ROW.height / 2, ROW.width, ROW.height, 32);
+    const background = roundedRect(scene, 0, y, ROW.width, ROW.height, 32, COLORS.cardRow);
     this.icon = scene.add.image(-340, y, ensureCreatureTexture(scene, level)).setDisplaySize(120, 120);
     this.iconScale = this.icon.scaleX;
     this.name = scene.add.text(-260, y - 22, '', dark(40, 700)).setOrigin(0, 0.5);

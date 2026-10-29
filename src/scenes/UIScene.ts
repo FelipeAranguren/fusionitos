@@ -14,6 +14,7 @@ import { IconButton } from '../view/ui/IconButton.ts';
 import { IconToggle } from '../view/ui/IconToggle.ts';
 import type { Modal } from '../view/ui/Modal.ts';
 import { openConfirmPopup, openDiscoveryPopup, openInstallHelpPopup, openWelcomePopup } from '../view/ui/popups.ts';
+import { roundedRect } from '../view/ui/shapes.ts';
 import { ShopPopup } from '../view/ui/ShopPopup.ts';
 import { TabStrip } from '../view/ui/TabStrip.ts';
 import { textStyle } from '../view/ui/textStyle.ts';
@@ -56,7 +57,8 @@ export class UIScene extends Phaser.Scene {
   private floorText!: Phaser.GameObjects.Text;
   private capacityText!: Phaser.GameObjects.Text;
   private eggIcon!: Phaser.GameObjects.Image;
-  private eggBar!: Phaser.GameObjects.Graphics;
+  private eggBar!: Phaser.GameObjects.Container;
+  private eggBarFill!: Phaser.GameObjects.Rectangle;
   /** En los demás pisos, en lugar de la barra: dónde caen los huevos (tocándolo, lleva ahí). */
   private eggHint!: Phaser.GameObjects.Container;
   private eggHintText!: Phaser.GameObjects.Text;
@@ -248,7 +250,7 @@ export class UIScene extends Phaser.Scene {
     const { hud } = LAYOUT;
     const left = hud.x + 40;
     const right = hud.x + hud.width - 40;
-    this.add.graphics().fillStyle(COLORS.hudPanel, COLORS.hudPanelAlpha).fillRoundedRect(hud.x, hud.y, hud.width, hud.height, 40);
+    roundedRect(this, hud.x + hud.width / 2, hud.y + hud.height / 2, hud.width, hud.height, 40, COLORS.hudPanel, COLORS.hudPanelAlpha);
 
     this.add.image(left + 42, hud.y + 72, TEXTURES.coin).setDisplaySize(88, 90);
     this.coinsText = this.add
@@ -271,7 +273,10 @@ export class UIScene extends Phaser.Scene {
     this.floorText = this.add.text(right, hud.y + 142, '', textStyle({ size: 38, align: 'right' })).setOrigin(1, 0.5);
 
     this.eggIcon = this.add.image(left + 36, EGG_ROW_Y, TEXTURES.egg).setDisplaySize(70, 70);
-    this.eggBar = this.add.graphics();
+    const { x, width, height } = BAR;
+    const barBack = roundedRect(this, x + width / 2, EGG_ROW_Y, width, height, height / 2, COLORS.barBg, COLORS.barBgAlpha);
+    this.eggBarFill = roundedRect(this, x, EGG_ROW_Y, height, height, height / 2, COLORS.barFill).setOrigin(0, 0.5);
+    this.eggBar = this.add.container(0, 0, [barBack, this.eggBarFill]);
     // Se toca en todo el ancho de la barra, no solo sobre las letras.
     this.eggHintText = this.add
       .text(-BAR.width / 2, 0, '', textStyle({ size: 32, weight: 600, stroke: false, align: 'left' }))
@@ -344,22 +349,18 @@ export class UIScene extends Phaser.Scene {
   }
 
   private drawEggBar(progress: number, full: boolean): void {
-    const { x, width, height } = BAR;
-    const y = EGG_ROW_Y - height / 2;
-    const g = this.eggBar.clear();
-    g.fillStyle(COLORS.barBg, COLORS.barBgAlpha).fillRoundedRect(x, y, width, height, height / 2);
+    this.eggBarFill.setVisible(progress > 0);
     if (progress <= 0) return;
     // Por debajo de una altura de ancho, el rectángulo redondeado se deforma.
-    const fillWidth = Math.max(height, width * progress);
-    g.fillStyle(full ? COLORS.barFull : COLORS.barFill, 1).fillRoundedRect(x, y, fillWidth, height, height / 2);
+    const fillWidth = Math.max(BAR.height, BAR.width * progress);
+    this.eggBarFill.setSize(fillWidth, BAR.height).setFillStyle(full ? COLORS.barFull : COLORS.barFill, 1);
   }
 
   private createBanner(): void {
     const label = this.add.text(0, 0, STRINGS.fieldFull, textStyle({ size: 34, stroke: false })).setOrigin(0.5);
     const width = label.width + 64;
     const height = label.height + 24;
-    const background = this.add.graphics();
-    background.fillStyle(COLORS.danger, 0.94).fillRoundedRect(-width / 2, -height / 2, width, height, height / 2);
+    const background = roundedRect(this, 0, 0, width, height, height / 2, COLORS.danger, 0.94);
     this.banner = this.add.container(GAME_WIDTH / 2, LAYOUT.bannerY, [background, label]).setVisible(false).setDepth(800);
   }
 

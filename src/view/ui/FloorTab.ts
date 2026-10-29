@@ -5,6 +5,7 @@ import { STRINGS } from '../../config/strings.ts';
 import { COLORS, GAME_WIDTH, LAYOUT, SHUTTER } from '../../config/visuals.ts';
 import { hatchLevel } from '../../core/levels.ts';
 import { TEXTURES, ensureCreatureTexture } from '../textures.ts';
+import { RoundedFrame, roundedRect } from './shapes.ts';
 import { textStyle } from './textStyle.ts';
 
 export interface FloorTabState {
@@ -31,7 +32,10 @@ const CENTER_Y = TABS.top + TABS.height / 2;
  * Va dentro de la tira deslizable (`TabStrip`), que es la que atiende los toques.
  */
 export class FloorTab extends Phaser.GameObjects.Container {
-  private readonly panel: Phaser.GameObjects.Graphics;
+  private readonly shadow: Phaser.GameObjects.Rectangle;
+  private readonly face: Phaser.GameObjects.Rectangle;
+  private readonly slats: Phaser.GameObjects.Graphics;
+  private readonly edge: RoundedFrame;
   private readonly icon: Phaser.GameObjects.Image;
   private readonly eggBadge: Phaser.GameObjects.Image;
   private readonly title: Phaser.GameObjects.Text;
@@ -44,12 +48,20 @@ export class FloorTab extends Phaser.GameObjects.Container {
   constructor(scene: Phaser.Scene, floor: number) {
     super(scene, TAB_WIDTH / 2 + floor * TAB_PITCH, CENTER_Y);
     this.tabFloor = floor;
-    this.panel = scene.add.graphics();
+    const { radius, height } = TABS;
+    this.shadow = roundedRect(scene, 0, 8, TAB_WIDTH, height, radius, 0x000000, 0.25);
+    this.face = roundedRect(scene, 0, 0, TAB_WIDTH, height, radius, 0x000000, 0.3);
+    this.slats = scene.add.graphics();
+    // Tablillas de la persiana (pisos cerrados): rectángulos, que no cuestan nada dibujar.
+    for (let y = -height / 2 + 30; y < height / 2 - 14; y += 26) {
+      this.slats.fillStyle(SHUTTER.dark, 0.7).fillRect(-TAB_WIDTH / 2 + 6, y, TAB_WIDTH - 12, 4);
+    }
+    this.edge = new RoundedFrame(scene, 0, 0, TAB_WIDTH, height, radius, 3, 0xffffff, 0.15);
     this.icon = scene.add.image(0, -32, TEXTURES.lock);
-    this.eggBadge = scene.add.image(TAB_WIDTH / 2 - 26, -TABS.height / 2 + 26, TEXTURES.egg).setDisplaySize(40, 40);
+    this.eggBadge = scene.add.image(TAB_WIDTH / 2 - 26, -height / 2 + 26, TEXTURES.egg).setDisplaySize(40, 40);
     this.title = scene.add.text(0, 22, '', textStyle({ size: 28, weight: 700 })).setOrigin(0.5);
     this.countText = scene.add.text(0, 54, '', textStyle({ size: 26 })).setOrigin(0.5);
-    this.add([this.panel, this.icon, this.title, this.countText, this.eggBadge]);
+    this.add([this.shadow, this.face, this.slats, this.edge, this.icon, this.title, this.countText, this.eggBadge]);
   }
 
   get floor(): number {
@@ -63,29 +75,19 @@ export class FloorTab extends Phaser.GameObjects.Container {
 
     const floor = this.tabFloor;
     const config = FLOORS[floor];
-    const { radius } = TABS;
-    const width = TAB_WIDTH;
-    const height = TABS.height;
-    const g = this.panel.clear();
+    const line = current ? 8 : 4;
+    this.shadow.setVisible(state.unlocked);
+    this.slats.setVisible(state.unlocked && state.closed);
     if (state.unlocked && state.closed) {
       // Persiana baja: tablillas marrones, candado y el nombre apagado.
-      const line = current ? 8 : 4;
-      g.fillStyle(0x000000, 0.25).fillRoundedRect(-width / 2, -height / 2 + 8, width, height, radius);
-      g.fillStyle(SHUTTER.color, 1).fillRoundedRect(-width / 2, -height / 2, width, height, radius);
-      for (let y = -height / 2 + 30; y < height / 2 - 14; y += 26) {
-        g.fillStyle(SHUTTER.dark, 0.7).fillRect(-width / 2 + 6, y, width - 12, 4);
-      }
-      g.lineStyle(line, current ? 0xffffff : SHUTTER.frame, 1);
-      g.strokeRoundedRect(-width / 2 + line / 2, -height / 2 + line / 2, width - line, height - line, radius - line / 2);
+      this.face.setFillStyle(SHUTTER.color, 1);
+      this.edge.setLine(line, current ? 0xffffff : SHUTTER.frame);
       this.icon.setTexture(TEXTURES.lock).setDisplaySize(58, 58).setAlpha(1);
       this.fitTitle(config.name).setAlpha(0.75);
       this.countText.setVisible(false);
     } else if (state.unlocked) {
-      const line = current ? 8 : 4;
-      g.fillStyle(0x000000, 0.25).fillRoundedRect(-width / 2, -height / 2 + 8, width, height, radius);
-      g.fillStyle(config.fieldColor, current ? 1 : 0.75).fillRoundedRect(-width / 2, -height / 2, width, height, radius);
-      g.lineStyle(line, current ? 0xffffff : config.accentColor, 1);
-      g.strokeRoundedRect(-width / 2 + line / 2, -height / 2 + line / 2, width - line, height - line, radius - line / 2);
+      this.face.setFillStyle(config.fieldColor, current ? 1 : 0.75);
+      this.edge.setLine(line, current ? 0xffffff : config.accentColor);
       this.icon.setTexture(ensureCreatureTexture(this.scene, hatchLevel(floor))).setDisplaySize(74, 74).setAlpha(1);
       this.fitTitle(config.name).setAlpha(1);
       this.countText
@@ -93,8 +95,8 @@ export class FloorTab extends Phaser.GameObjects.Container {
         .setColor(state.full ? '#ff8a7a' : COLORS.textLight)
         .setVisible(true);
     } else {
-      g.fillStyle(0x000000, 0.3).fillRoundedRect(-width / 2, -height / 2, width, height, radius);
-      g.lineStyle(3, 0xffffff, 0.15).strokeRoundedRect(-width / 2, -height / 2, width, height, radius);
+      this.face.setFillStyle(0x000000, 0.3);
+      this.edge.setLine(3, 0xffffff, 0.15);
       this.icon.setTexture(TEXTURES.lock).setDisplaySize(58, 58).setAlpha(0.85);
       this.fitTitle(STRINGS.floorTab(floor)).setAlpha(0.55);
       this.countText.setVisible(false);
@@ -122,7 +124,6 @@ export class FloorTab extends Phaser.GameObjects.Container {
 
 /** Flecha a un costado de la barra de pestañas: la corre una página. */
 export class TabArrow extends Phaser.GameObjects.Container {
-  private readonly panel: Phaser.GameObjects.Graphics;
   private enabled = true;
   private pressed = false;
 
@@ -131,11 +132,11 @@ export class TabArrow extends Phaser.GameObjects.Container {
     super(scene, x, CENTER_Y);
     const width = TABS.arrowWidth;
     const height = TABS.height - 20;
-    this.panel = scene.add.graphics();
-    this.panel.fillStyle(0x000000, 0.3).fillRoundedRect(-width / 2, -height / 2, width, height, 26);
+    const panel = roundedRect(scene, 0, 0, width, height, 26, 0x000000, 0.3);
+    // Un triángulo en Graphics no tiene curvas: no hay que triangularlo en cada frame.
     const arrow = scene.add.graphics();
     arrow.fillStyle(0xffffff, 1).fillTriangle(side * 16, 0, -side * 12, -24, -side * 12, 24);
-    this.add([this.panel, arrow]);
+    this.add([panel, arrow]);
     this.setName(side < 0 ? 'tabs:prev' : 'tabs:next');
 
     this.setSize(width + 16, height);

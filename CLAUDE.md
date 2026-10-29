@@ -63,7 +63,8 @@ public/       manifest.webmanifest e icons/ (instalable como app): los PNG se re
 - El modelo guarda las posiciones **normalizadas** (0..1 dentro del campo). La conversión a píxeles se hace solo en `src/view/fieldSpace.ts`.
 - Las criaturas se dibujan por clave de textura. `BootScene` carga las `image` del catálogo y genera las texturas fijas (huevo, íconos, moneda). Las de criaturas y decoración se generan desde el emoji la primera vez que se usan: pedí la clave con `ensureCreatureTexture(scene, n)` o `ensureDecorTexture(scene, emoji)` (`src/view/textures.ts`), nunca armándola a mano.
 - **Texturas dibujadas por código:** pasan por `addGeneratedTexture`, que en WebGL las registra como píxeles (`addUint8Array`) y no como canvas. Con la pestaña en segundo plano, el celular puede perder la GPU y con ella el contenido de los canvas: los emojis desaparecían. Al recuperar el contexto, Phaser vuelve a subir cada textura desde sus píxeles.
-- **Barra de pestañas:** `TabStrip` (`src/view/ui/TabStrip.ts`) es una tira con una `FloorTab` por piso, recortada con una máscara entre dos `TabArrow`.
+- **Rendimiento — nada de curvas con `Graphics` en lo que se ve siempre:** Phaser vuelve a triangular en cada frame los rectángulos redondeados y círculos de un `Graphics` (~100 puntos por esquina). Con varios en pantalla, el juego iba a ~11 cuadros por segundo en el celular. Usá `roundedRect` / `RoundedFrame` (`src/view/ui/shapes.ts`) o `scene.add.circle`: calculan su contorno una sola vez. `Graphics` queda para rectángulos, triángulos y líneas, o para algo pasajero.
+- **Barra de pestañas:** `TabStrip` (`src/view/ui/TabStrip.ts`) es una tira con una `FloorTab` por piso, recortada con una máscara entre dos `TabArrow`. Solo se dibujan las pestañas que asoman entre las flechas.
   - Los toques los atiende una zona que cubre la tira, no cada pestaña: así se distingue tocar una pestaña de deslizar la barra (arrastre con impulso, rueda del mouse).
   - Dónde se acomoda lo decide `src/view/tabWindow.ts` (puro y testeado). `UIScene` la lleva a `tabWindowStart` cuando cambia el piso que se ve o el de los huevos.
 - **Piso que se ve:**
@@ -126,4 +127,5 @@ public/       manifest.webmanifest e icons/ (instalable como app): los PNG se re
   - Para arrastrar sobre el canvas, usá `page.mouse` (down / move con pasos / up) con las coordenadas de `__debug.entities()`.
   - Las pruebas automáticas corren en un navegador headless aparte. El usuario suele jugar en la ventana visible de Playwright: no le cambies el viewport (`browser_resize` lo fija y rompe el ajuste y el zoom).
   - Las capturas van fuera del repo (`.playwright-mcp/` está en `.gitignore`).
+  - Para medir la fluidez como en un celular: en el Chrome headless, `Emulation.setCPUThrottlingRate({ rate: 4 })` por CDP, medir los cuadros con `requestAnimationFrame` mientras se arrastra una criatura, y ver dónde se va el tiempo con `Profiler.start` / `Profiler.stop`.
   - Para simular que el celular pierde la GPU: en el Chrome headless, `(await browser.newBrowserCDPSession()).send('Browser.crashGpuProcess')`. Con `WEBGL_lose_context` no alcanza, porque no borra los canvas.
