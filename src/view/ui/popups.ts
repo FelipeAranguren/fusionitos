@@ -5,6 +5,7 @@ import { COLORS } from '../../config/visuals.ts';
 import { incomePerSecond, type OfflineEarnings } from '../../core/economy.ts';
 import { formatDuration, formatNumber } from '../../core/format.ts';
 import { creatureConfig, floorConfig, floorOfLevel, tierOfLevel } from '../../core/levels.ts';
+import type { InstallPlatform } from '../../install/platform.ts';
 import { TEXTURES, ensureCreatureTexture } from '../textures.ts';
 import { Button } from './Button.ts';
 import { Modal } from './Modal.ts';
@@ -86,6 +87,29 @@ export function openWelcomePopup(scene: Phaser.Scene, earnings: OfflineEarnings,
       .setOrigin(0.5),
     new Button(scene, 0, 300, {
       label: STRINGS.welcomeOk,
+      width: 440,
+      height: 120,
+      color: COLORS.primary,
+      fontSize: 52,
+      onClick: () => modal.close(),
+    }),
+  ]);
+  return modal;
+}
+
+/** Pasos para agregar el juego a la pantalla de inicio, cuando el navegador no ofrece instalarlo. */
+export function openInstallHelpPopup(scene: Phaser.Scene, platform: InstallPlatform, onClosed: () => void): Modal {
+  const modal = new Modal(scene, 900, 1000, onClosed);
+  const steps = platform === 'ios' ? STRINGS.installStepsIos : STRINGS.installStepsMenu;
+  modal.card.add([
+    scene.add.image(0, -370, TEXTURES.install).setDisplaySize(130, 130),
+    scene.add.text(0, -255, STRINGS.installTitle, dark(58, 700)).setOrigin(0.5),
+    scene.add
+      .text(0, -165, STRINGS.installIntro, { ...dark(36, 500, COLORS.textMuted), align: 'center', wordWrap: { width: 780 } })
+      .setOrigin(0.5),
+    scene.add.text(0, 55, steps, { ...dark(38, 600), align: 'center', lineSpacing: 6 }).setOrigin(0.5),
+    new Button(scene, 0, 375, {
+      label: STRINGS.installOk,
       width: 440,
       height: 120,
       color: COLORS.primary,

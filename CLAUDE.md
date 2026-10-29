@@ -43,12 +43,16 @@ src/config/   datos y constantes, sin lógica
   music.ts      partitura del loop de música
 src/audio/    sonido con Web Audio, sin Phaser: AudioEngine (efectos y música, silencio, pausa);
               notation.ts y settings.ts son puros y tienen tests
+src/install/  acceso directo, sin Phaser: InstallPrompt (aviso `beforeinstallprompt` del navegador);
+              platform.ts (cuándo ofrecerlo y qué pasos explicar) es puro y tiene tests
 src/core/     lógica pura del juego: SIN Phaser, SIN DOM; testeada con Vitest
   GameModel.ts  fachada: estado + comandos (tick, hatch, merge, move, reset) + eventos
 src/scenes/   escenas Phaser: BootScene (texturas), GameScene (campo de un piso), UIScene (HUD, pestañas y popups)
   context.ts    GameContext: modelo, bus de UI (`ui`: toast, selectFloor) y estado de la vista (`view.floor`, `view.welcome`)
 src/view/     objetos visuales (CreatureView, EggView), efectos y widgets de UI (Button, Modal, FloorTab, ShopPopup…)
 src/main.ts   arma GameModel + SaveManager + Phaser.Game y conecta el guardado
+public/       manifest.webmanifest e icons/ (instalable como app): los PNG se renderizan desde
+              icons/icon.svg con Chrome headless; el maskable lleva el dibujo al 80 %
 ```
 
 ### Reglas de capas
@@ -109,9 +113,10 @@ src/main.ts   arma GameModel + SaveManager + Phaser.Game y conecta el guardado
   - `spawnEgg()` (en el piso de los huevos) y `spawnCreature(level)` (aparece en el piso de su nivel y lo desbloquea; para simular una partida avanzada, creá el tier 1 de cada piso en orden);
   - `addCoins(n)` y `simulateAway(ms)` (ingreso offline y bienvenida, como al volver a la pestaña);
   - `audio()`: estado del audio (`locked` hasta el primer gesto), música y efectos prendidos, y los últimos sonidos que sonaron;
+  - `install()`: si se ofrece el acceso directo y para qué sistema son los pasos;
   - `selectFloor(floor)` y `currentFloor()` (pisos desde 0);
   - `entities()` (las del piso que se ve), con posiciones en píxeles de la página;
-  - `buttons()`: los botones visibles, con posiciones en píxeles de la página. Se llaman `shop`, `shop:close`, `buy:N`, `reset`, `tab:N` (solo las 5 pestañas a la vista), `tabs:prev`, `tabs:next`, `eggs:go` (el atajo al piso de los huevos), `toggle:sfx`, `toggle:music`; los de los popups, por su texto;
+  - `buttons()`: los botones visibles, con posiciones en píxeles de la página. Se llaman `shop`, `shop:close`, `buy:N`, `reset`, `tab:N` (solo las 5 pestañas a la vista), `tabs:prev`, `tabs:next`, `eggs:go` (el atajo al piso de los huevos), `toggle:sfx`, `toggle:music`, `install`; los de los popups, por su texto;
   - `toPage(x, y)` y `clearSave()`.
 - Con el MCP de Playwright (`.mcp.json`): `npm run dev` y abrir http://localhost:5173.
   - Para arrastrar sobre el canvas, usá `page.mouse` (down / move con pasos / up) con las coordenadas de `__debug.entities()`.

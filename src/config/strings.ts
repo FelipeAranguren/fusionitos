@@ -29,6 +29,13 @@ export const STRINGS = {
   welcomeOk: '¡Genial!',
   duration: { underAMinute: 'menos de 1 min', day: 'd', hour: 'h', minute: 'min' },
 
+  installTitle: 'Acceso directo',
+  installIntro: 'Para tener Fusionitos en tu pantalla de inicio, como una app:',
+  installStepsIos: '1. Tocá el botón Compartir del navegador\n(el cuadrado con una flecha).\n2. Elegí «Agregar a inicio».',
+  installStepsMenu:
+    '1. Abrí el menú del navegador (⋮).\n2. Elegí «Agregar a la pantalla principal»\no «Instalar app».\n\nSi el juego se abrió desde otra app,\nantes elegí «Abrir en Chrome».',
+  installOk: 'Entendido',
+
   reset: 'Reiniciar',
   resetTitle: '¿Reiniciar el juego?',
   resetBody: 'Vas a perder todas tus criaturas,\nmonedas y descubrimientos.',

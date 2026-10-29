@@ -16,6 +16,7 @@ export const TEXTURES = {
   shop: 'shop',
   sound: 'sound',
   music: 'music',
+  install: 'install',
 } as const;
 
 const creatureTextureKey = (level: number): string => `creature-${level}`;
@@ -57,6 +58,7 @@ export function generateTextures(scene: Phaser.Scene): void {
   createEmojiTexture(scene, TEXTURES.shop, ICONS.shop, 128, 4);
   createEmojiTexture(scene, TEXTURES.sound, ICONS.sound, 128, 4);
   createEmojiTexture(scene, TEXTURES.music, ICONS.music, 128, 4);
+  createEmojiTexture(scene, TEXTURES.install, ICONS.install, 128, 4);
   createCoinTexture(scene);
   createSparkTexture(scene);
   createShellTexture(scene);

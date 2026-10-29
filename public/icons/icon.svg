@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Ícono de la app. Los PNG de esta carpeta se renderizan desde acá; el maskable lleva el dibujo al 80 %. -->
+  <defs>
+    <radialGradient id="bg" cx="0.5" cy="0.38" r="0.75">
+      <stop offset="0" stop-color="#a3e872"/>
+      <stop offset="1" stop-color="#3a8f36"/>
+    </radialGradient>
+    <radialGradient id="shell" cx="0.38" cy="0.3" r="0.85">
+      <stop offset="0" stop-color="#fffdf7"/>
+      <stop offset="0.6" stop-color="#f7e5c0"/>
+      <stop offset="1" stop-color="#ddb67a"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g id="art">
+    <ellipse cx="256" cy="430" rx="114" ry="20" fill="#000" opacity="0.2"/>
+    <path d="M256 88 C330 88 388 214 388 300 C388 376 330 420 256 420 C182 420 124 376 124 300 C124 214 182 88 256 88 Z"
+      fill="url(#shell)" stroke="#b98a4e" stroke-width="8"/>
+    <path d="M131 268 L166 249 L196 282 L230 246 L262 284 L296 248 L326 281 L356 251 L383 270"
+      fill="none" stroke="#a87638" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <ellipse cx="204" cy="170" rx="24" ry="46" fill="#fff" opacity="0.75" transform="rotate(-22 204 170)"/>
+    <path d="M404 84 Q404 118 438 118 Q404 118 404 152 Q404 118 370 118 Q404 118 404 84 Z" fill="#fff" opacity="0.95"/>
+    <path d="M110 128 Q110 150 132 150 Q110 150 110 172 Q110 150 88 150 Q110 150 110 128 Z" fill="#fff" opacity="0.85"/>
+    <path d="M424 204 Q424 220 440 220 Q424 220 424 236 Q424 220 408 220 Q424 220 424 204 Z" fill="#fff" opacity="0.8"/>
+  </g>
+</svg>

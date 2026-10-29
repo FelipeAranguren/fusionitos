@@ -10,6 +10,7 @@ import { GAME_HEIGHT, GAME_WIDTH } from './config/visuals.ts';
 import { Emitter } from './core/emitter.ts';
 import { GameModel } from './core/GameModel.ts';
 import { floorConfig } from './core/levels.ts';
+import { InstallPrompt } from './install/InstallPrompt.ts';
 import { SaveManager, type StorageLike } from './core/save.ts';
 import { BootScene } from './scenes/BootScene.ts';
 import type { GameContext, UiEvents, ViewState } from './scenes/context.ts';
@@ -32,6 +33,8 @@ async function waitForFonts(timeoutMs: number): Promise<void> {
 
 async function start(): Promise<void> {
   const storage = getStorage();
+  // Lo antes posible: el aviso de que se puede instalar llega una sola vez, al cargar.
+  const install = new InstallPrompt(storage);
   const saves = new SaveManager(storage);
   const audio = new AudioEngine(storage);
   const loaded = saves.load();
@@ -49,6 +52,7 @@ async function start(): Promise<void> {
     ui,
     view,
     audio,
+    install,
     saveNow: () => {
       if (saves.save(model.state, hiddenSince ?? Date.now()) || warnedSaveFailure) return;
       warnedSaveFailure = true;

@@ -23,6 +23,8 @@ export interface DebugApi {
   simulateAway(ms: number): void;
   /** Estado del audio y los últimos sonidos que sonaron. */
   audio(): { state: string; musicOn: boolean; sfxOn: boolean; musicPlaying: boolean; recent: string[] };
+  /** Acceso directo: si se ofrece y para qué sistema son los pasos. */
+  install(): { available: boolean; platform: string };
   /** Pide mostrar un piso (igual que tocar su pestaña). */
   selectFloor(floor: number): void;
   /** Piso que muestra el campo ahora (índice desde 0). */
@@ -67,6 +69,7 @@ export function installDebugHooks(game: Phaser.Game, ctx: GameContext, { clearSa
       musicPlaying: audio.musicPlaying,
       recent: [...audio.recent],
     }),
+    install: () => ({ available: ctx.install.available, platform: ctx.install.platform }),
     selectFloor: (floor) => ctx.ui.emit('selectFloor', { floor }),
     currentFloor: () => ctx.view.floor,
     entities: () => game.scene.getScene<GameScene>('Game').debugViews().map((view) => ({ ...view, page: toPage(view.x, view.y) })),

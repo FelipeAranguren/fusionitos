@@ -20,9 +20,13 @@ export const LAYOUT = {
   /** Última línea: la pista a la izquierda y el botón de reiniciar a la derecha. */
   hintX: 44,
   hintY: 1876,
+  /** Espacio mínimo entre la pista y el primer botón redondo (si no entra, la pista se achica). */
+  hintGap: 16,
   resetButton: { x: 946, width: 220, height: 64 },
   /** Botones redondos para silenciar efectos y música, entre la pista y "Reiniciar". */
   audioToggles: { sfxX: 690, musicX: 772, size: 72, hitPadding: 20 },
+  /** Botón redondo de acceso directo, antes de los de sonido (solo cuando se ofrece). */
+  installButtonX: 608,
 } as const;
 
 /** Íconos de la interfaz que se generan desde emojis (los de criaturas están en creatures.ts). */
@@ -31,6 +35,7 @@ export const ICONS = {
   shop: '🛒',
   sound: '🔊',
   music: '🎵',
+  install: '📲',
 } as const;
 
 export const SIZES = {

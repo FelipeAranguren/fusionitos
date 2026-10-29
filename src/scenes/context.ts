@@ -2,6 +2,7 @@ import type { AudioPort } from '../audio/AudioEngine.ts';
 import type { OfflineEarnings } from '../core/economy.ts';
 import type { Emitter } from '../core/emitter.ts';
 import type { GameModel } from '../core/GameModel.ts';
+import type { InstallPrompt } from '../install/InstallPrompt.ts';
 
 /** Avisos y pedidos entre escenas (no son cambios de estado del juego, por eso no salen del modelo). */
 export interface UiEvents {
@@ -24,6 +25,8 @@ export interface GameContext {
   readonly ui: Emitter<UiEvents>;
   readonly view: ViewState;
   readonly audio: AudioPort;
+  /** Acceso directo: si ofrecerlo y el diálogo del navegador. */
+  readonly install: InstallPrompt;
   /** Guarda ya mismo. */
   saveNow(): void;
   /** Borra la partida y guarda el estado nuevo. */

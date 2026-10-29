@@ -9,9 +9,10 @@ import { tabWindowStart } from '../view/tabWindow.ts';
 import { TEXTURES } from '../view/textures.ts';
 import { Button } from '../view/ui/Button.ts';
 import { FloorTab, TabArrow } from '../view/ui/FloorTab.ts';
+import { IconButton } from '../view/ui/IconButton.ts';
 import { IconToggle } from '../view/ui/IconToggle.ts';
 import type { Modal } from '../view/ui/Modal.ts';
-import { openConfirmPopup, openDiscoveryPopup, openWelcomePopup } from '../view/ui/popups.ts';
+import { openConfirmPopup, openDiscoveryPopup, openInstallHelpPopup, openWelcomePopup } from '../view/ui/popups.ts';
 import { ShopPopup } from '../view/ui/ShopPopup.ts';
 import { TabStrip } from '../view/ui/TabStrip.ts';
 import { textStyle } from '../view/ui/textStyle.ts';
@@ -33,6 +34,8 @@ interface Shown {
   /** Por piso, para avisar cuando cambian. */
   counts: number[];
   unlocked: boolean[];
+  /** Si se ofrece el acceso directo (null: todavía no se miró). */
+  installable: boolean | null;
 }
 
 /**
@@ -53,6 +56,8 @@ export class UIScene extends Phaser.Scene {
   private banner!: Phaser.GameObjects.Container;
   private bannerTween: Phaser.Tweens.Tween | null = null;
   private tabStrip!: TabStrip;
+  private hintText!: Phaser.GameObjects.Text;
+  private installButton!: IconButton;
   private toasts!: ToastQueue;
   private modal: Modal | null = null;
   private shop: ShopPopup | null = null;
@@ -76,11 +81,12 @@ export class UIScene extends Phaser.Scene {
       full: false,
       counts: [],
       unlocked: [],
+      installable: null,
     };
     this.createHud();
     this.createBanner();
     this.createTabs();
-    this.add
+    this.hintText = this.add
       .text(LAYOUT.hintX, LAYOUT.hintY, STRINGS.hint, textStyle({ size: 32, weight: 500, stroke: false, align: 'left' }))
       .setOrigin(0, 0.5)
       .setAlpha(0.8);
@@ -95,6 +101,14 @@ export class UIScene extends Phaser.Scene {
       onClick: () => this.confirmReset(),
     });
     this.createAudioToggles();
+    this.installButton = new IconButton(this, LAYOUT.installButtonX, LAYOUT.hintY, {
+      icon: TEXTURES.install,
+      size: LAYOUT.audioToggles.size,
+      hitPadding: LAYOUT.audioToggles.hitPadding,
+      color: COLORS.primary,
+      name: 'install',
+      onPress: () => void this.install(),
+    }).setVisible(false);
     this.toasts = new ToastQueue(this);
     this.input.keyboard?.on('keydown-LEFT', () => this.stepFloor(-1));
     this.input.keyboard?.on('keydown-RIGHT', () => this.stepFloor(1));
@@ -182,6 +196,14 @@ export class UIScene extends Phaser.Scene {
     if (full !== shown.full || floorChanged) this.setBannerVisible(full);
     shown.full = full;
 
+    // El navegador puede avisar en cualquier momento que se puede instalar (y dejar de ofrecerlo al instalar).
+    const installable = this.ctx.install.available;
+    if (installable !== shown.installable) {
+      this.installButton.setVisible(installable);
+      this.fitHint(installable ? LAYOUT.installButtonX : LAYOUT.audioToggles.sfxX);
+      shown.installable = installable;
+    }
+
     this.updateTabs(floor, eggFloor);
     if (eggFloorRose) this.tabStrip.attention(eggFloor);
   }
@@ -196,7 +218,7 @@ export class UIScene extends Phaser.Scene {
             ? object.name || object.label
             : object instanceof FloorTab
               ? `tab:${object.floor + 1}`
-              : object instanceof IconToggle || object instanceof TabArrow || object === this.eggHint
+              : object instanceof IconButton || object instanceof TabArrow || object === this.eggHint
                 ? object.name
                 : null;
         // Las pestañas no atienden toques propios (lo hace la tira): valen las que están a la vista.
@@ -295,6 +317,21 @@ export class UIScene extends Phaser.Scene {
         audio.play('click');
       },
     });
+  }
+
+  /** La pista se achica si no entra antes del primer botón redondo (`firstButtonX`, su centro). */
+  private fitHint(firstButtonX: number): void {
+    const available = firstButtonX - LAYOUT.audioToggles.size / 2 - LAYOUT.hintGap - LAYOUT.hintX;
+    this.hintText.setScale(Math.min(1, available / this.hintText.width));
+  }
+
+  /** Acceso directo: el diálogo del navegador si lo hay; si no, los pasos para hacerlo a mano. */
+  private async install(): Promise<void> {
+    if (this.modal) return;
+    this.ctx.audio.play('click');
+    if (await this.ctx.install.prompt()) return;
+    if (this.modal) return;
+    this.modal = openInstallHelpPopup(this, this.ctx.install.platform, () => this.onModalClosed());
   }
 
   private drawEggBar(progress: number, full: boolean): void {

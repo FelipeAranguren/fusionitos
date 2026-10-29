@@ -348,7 +348,7 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
 - **Huevos:** caen solo en el piso de los huevos (§4), también mientras se mira otro piso. En los demás pisos, la barra del huevo del HUD se reemplaza por "Los huevos caen en el Piso N ›".
 - **Ingreso:** todos los pisos generan ingreso aunque no se estén viendo; los "+X" se ven solo en el piso que está en pantalla.
 - **Avisos:** cuando se desbloquea un piso o le llega una criatura mientras no se lo ve, su pestaña late. Si la pestaña no está a la vista, late la flecha de ese lado.
-- **Al abrir el juego** (o al recargar) se ve el piso más alto desbloqueado, que es donde avanza la partida. El piso que se mira es estado de la vista, no se guarda.
+- **Al abrir el juego** (desde el link, el acceso directo o al recargar) se ve el piso más alto desbloqueado, que es donde avanza la partida. El piso que se mira es estado de la vista, no se guarda.
 - **Al reiniciar** se vuelve al piso 1 y los demás se bloquean.
 
 ## 9. Interfaz — FASES 1 a 3
@@ -362,7 +362,7 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
 - **Banner** "¡Campo lleno!" mientras no quede lugar en el piso que se ve.
 - **Popups:** "¡Nueva criatura descubierta!", la tienda, la bienvenida tras una ausencia y la confirmación de reinicio. Se muestran de a uno y, mientras están abiertos, bloquean el campo, las pestañas y el teclado.
 - **Toasts:** avisos cortos ("¡Piso 2 desbloqueado!", "¡Ahora los huevos caen en el Piso 2: Granja!", "El Piso 2 está lleno", "¡Nivel máximo!", qué abre un piso bloqueado).
-- **Pie:** las pestañas de pisos (5 a la vista, deslizables y con flechas) y, debajo, una pista de cómo jugar, los botones redondos 🔊 (efectos) y 🎵 (música) y el botón **Reiniciar** (abajo, para no tocarlo sin querer).
+- **Pie:** las pestañas de pisos (5 a la vista, deslizables y con flechas) y, debajo, una pista de cómo jugar, el botón verde 📲 de acceso directo (cuando se ofrece, §14), los botones redondos 🔊 (efectos) y 🎵 (música) y el botón **Reiniciar** (abajo, para no tocarlo sin querer). Si la pista no entra antes de los botones, se achica.
 
 ## 10. Guardado — FASE 1
 
@@ -445,8 +445,12 @@ Las constantes visuales (tamaños, velocidades de deambular, duraciones de anima
 - [x] El juego abre en el piso más alto desbloqueado.
 - [x] Barra de pestañas deslizable con el dedo (con impulso) y con la rueda del mouse, además de las flechas.
 
+### Extra — acceso directo ✅
+- [x] Instalable como app (manifest e íconos): abre a pantalla completa, en vertical.
+- [x] Botón 📲 en el pie: el diálogo del navegador, o los pasos para Android e iPhone.
+
 ### Ideas futuras (sin fase asignada)
-Arte definitivo para las 120 criaturas, logros, tutorial guiado y PWA instalable.
+Arte definitivo para las 120 criaturas, logros, tutorial guiado y juego sin conexión.
 
 ## 13. Sonido y música
 
@@ -476,3 +480,17 @@ Todo se sintetiza en el navegador con Web Audio: no hay archivos de audio ni lic
   - Los parlantes de celular y notebook no reproducen graves profundos: con un bombo de 45 Hz se saturaban y hacían un "tic" de chasquido. Por eso no hay bombo y ningún sonido baja de unos 130 Hz.
   - Ataques de al menos 8 ms, para que nada empiece con un clic seco.
   - Las notas nunca se programan en el pasado: si el juego se traba, se saltean.
+
+## 14. Acceso directo
+
+El juego se puede instalar en el celular como una app: queda un ícono en la pantalla de inicio y abre sin la barra del navegador.
+
+- **Manifest** (`public/manifest.webmanifest`): nombre "Fusionitos", pantalla completa (`standalone`) y en vertical, color #1f3d1b y el ícono del huevo.
+  - Los íconos están en `public/icons/`: 192 y 512 px, uno *maskable* (el dibujo al 80 %, para los íconos redondos de Android) y el de iPhone (180 px). Se renderizan desde `icon.svg`.
+  - No hay service worker: Chrome ya no lo pide para instalar. Sin conexión, el juego no abre.
+- **Botón 📲** (verde, en el pie):
+  - Si el navegador avisa que se puede instalar (Chrome, Edge, Samsung Internet), abre su diálogo. Ese aviso se guarda al cargar y no se muestra el cartel automático del navegador.
+  - Si no avisa (Safari, o Chrome abierto desde otra app como WhatsApp), muestra los pasos: en iPhone, Compartir → «Agregar a inicio»; en Android, el menú ⋮ → «Agregar a la pantalla principal» (o primero «Abrir en Chrome»).
+  - No aparece en la compu sin aviso del navegador, ni con el juego abierto como app, ni después de instalarlo (se recuerda en `fusionitos.installed`).
+- **Progreso:** en Android, la app y el navegador comparten el guardado. En iPhone, la app de la pantalla de inicio tiene su propio guardado, aparte del de Safari.
+- **Al abrirlo** se ve el piso más alto desbloqueado (§8).
