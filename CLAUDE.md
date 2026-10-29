@@ -48,7 +48,7 @@ src/install/  acceso directo, sin Phaser: InstallPrompt (aviso `beforeinstallpro
 src/core/     lógica pura del juego: SIN Phaser, SIN DOM; testeada con Vitest
   GameModel.ts  fachada: estado + comandos (tick, hatch, merge, move, reset) + eventos
 src/scenes/   escenas Phaser: BootScene (texturas), GameScene (campo de un piso), UIScene (HUD, pestañas y popups)
-  context.ts    GameContext: modelo, bus de UI (`ui`: toast, selectFloor) y estado de la vista (`view.floor`, `view.welcome`)
+  context.ts    GameContext: modelo, bus de UI (`ui`: toast, selectFloor, showClosing, closingShown) y estado de la vista (`view.floor`, `view.welcome`)
 src/view/     objetos visuales (CreatureView, EggView), efectos y widgets de UI (Button, Modal, FloorTab, ShopPopup…)
 src/main.ts   arma GameModel + SaveManager + Phaser.Game y conecta el guardado
 public/       manifest.webmanifest e icons/ (instalable como app): los PNG se renderizan desde
@@ -57,7 +57,7 @@ public/       manifest.webmanifest e icons/ (instalable como app): los PNG se re
 
 ### Reglas de capas
 - `src/core` **no importa Phaser ni toca el DOM** (lo verifica `src/core/architecture.test.ts`). Lo que necesita del entorno se inyecta: RNG, storage y reloj.
-- Las vistas **nunca mutan el estado**: llaman a comandos del `GameModel` y reaccionan a sus eventos (`eggSpawned`, `eggHatched`, `creaturesMerged`, `coinsPopped`, `creatureDiscovered`, `floorUnlocked`, `stateReset`).
+- Las vistas **nunca mutan el estado**: llaman a comandos del `GameModel` y reaccionan a sus eventos (`eggSpawned`, `eggHatched`, `creaturesMerged`, `creatureAdded`, `coinsPopped`, `creatureDiscovered`, `floorUnlocked`, `floorClosed`, `stateReset`).
 - Los valores continuos (monedas, ingreso/s, progreso del huevo, capacidad) el HUD los lee del modelo en `update()`. No se crean eventos para eso.
 - La lógica aplica el cambio al instante; las animaciones son solo visuales y nunca bloquean al modelo.
 - El modelo guarda las posiciones **normalizadas** (0..1 dentro del campo). La conversión a píxeles se hace solo en `src/view/fieldSpace.ts`.
@@ -68,8 +68,12 @@ public/       manifest.webmanifest e icons/ (instalable como app): los PNG se re
   - Dónde se acomoda lo decide `src/view/tabWindow.ts` (puro y testeado). `UIScene` la lleva a `tabWindowStart` cuando cambia el piso que se ve o el de los huevos.
 - **Piso que se ve:**
   - Es estado de la vista (`ctx.view.floor`), no del juego, así que no se guarda. Al abrir el juego es el más alto desbloqueado (`main.ts`).
-  - Para cambiarlo, se emite `ui.emit('selectFloor', { floor })`. `GameScene` valida que esté desbloqueado y se reinicia con `scene.restart({ floor })`.
+  - Para cambiarlo, se emite `ui.emit('selectFloor', { floor })`. `GameScene` valida que esté abierto (desbloqueado y no cerrado) y se reinicia con `scene.restart({ floor })`.
   - Las escenas leen `view.floor` en `update()`.
+- **Pisos cerrados** (por debajo del de los huevos): es una regla derivada (`isFloorClosed`), no un dato guardado. El modelo los vacía al instante y emite `floorClosed` con lo que tenían.
+  - `UIScene` encola el cierre detrás del popup de la criatura nueva (una sola cola de pasos) y, cuando le toca, emite `showClosing`.
+  - `GameScene` se reinicia en ese piso con lo que tenía (`scene.restart({ floor, closing })`), baja la persiana y avisa con `closingShown`. Después la `UIScene` pasa al piso de los huevos.
+  - Mientras tanto, la `UIScene` está ocupada (`busy`): no cambia de piso ni abre popups.
 
 ### Configuración centralizada
 - Ningún número de balance fuera de `balance.ts`, ningún texto de UI fuera de `strings.ts`, ningún emoji de criatura fuera de `creatures.ts` y ningún sonido fuera de `sounds.ts` y `music.ts`.

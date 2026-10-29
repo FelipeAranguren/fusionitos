@@ -74,6 +74,17 @@ export const AUDIO_MIX = {
   limiter: { thresholdDb: -3, kneeDb: 3, ratio: 20 },
 } as const;
 
+/** Golpecitos de las tablillas de una persiana que baja, cada vez más seguidos. */
+function shutterClacks(count: number): NoiseLayer[] {
+  return Array.from({ length: count }, (_, i) => ({
+    wave: 'noise' as const,
+    start: 0.9 * (1 - ((count - i) / count) ** 1.6),
+    duration: 0.035,
+    volume: 0.08,
+    filter: { type: 'bandpass' as const, freq: 2300, q: 4 },
+  }));
+}
+
 export const SOUNDS = {
   /** Botones. */
   click: { layers: [{ wave: 'triangle', pitch: 1100, pitchEnd: 750, duration: 0.05, volume: 0.22 }] },
@@ -157,6 +168,28 @@ export const SOUNDS = {
     layers: [
       { wave: 'sine', notes: ['E6', 'G6', 'B6', 'E7', 'G7'], spacing: 0.07, noteDuration: 0.1, volume: 0.07 },
       { wave: 'triangle', notes: ['C5', 'E5', 'G5', 'C6'], spacing: 0.09, noteDuration: 0.18, volume: 0.16 },
+    ],
+  },
+  /** Se cierra un piso: la persiana baja traqueteando (dura lo mismo que ANIM.shutterDropMs). */
+  shutter: {
+    layers: [
+      { wave: 'noise', duration: 0.9, volume: 0.05, attack: 0.05, filter: { type: 'bandpass', freq: 700, freqEnd: 1300, q: 1.5 } },
+      ...shutterClacks(12),
+    ],
+  },
+  /** La persiana llega abajo: golpe seco, arriba de los graves que los parlantes chicos no reproducen. */
+  shutterLand: {
+    layers: [
+      { wave: 'sine', pitch: 240, pitchEnd: 140, duration: 0.16, volume: 0.32, attack: 0.008 },
+      { wave: 'noise', duration: 0.12, volume: 0.12, filter: { type: 'bandpass', freq: 1200, q: 1.2 } },
+    ],
+  },
+  /** Aparece el candado: clic metálico. */
+  lock: {
+    layers: [
+      { wave: 'triangle', pitch: 'A5', pitchEnd: 'E5', duration: 0.06, volume: 0.2 },
+      { wave: 'noise', start: 0.07, duration: 0.03, volume: 0.22, filter: { type: 'highpass', freq: 3000 } },
+      { wave: 'triangle', pitch: 'E6', start: 0.08, duration: 0.14, volume: 0.12 },
     ],
   },
   /** Cambio de piso. */

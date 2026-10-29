@@ -49,6 +49,8 @@ export const STRINGS = {
   eggsFallOn: (floor: number) => `Los huevos caen en el Piso ${floor + 1} ›`,
   eggFloorMoved: (floor: number, name: string) => `🥚 ¡Ahora los huevos caen en el Piso ${floor + 1}: ${name}!`,
   floorUnlocked: (floor: number, name: string) => `🔓 ¡Piso ${floor + 1} desbloqueado: ${name}!`,
+  floorClosed: (floor: number, name: string) => `🔒 El Piso ${floor + 1} (${name}) quedó cerrado: los huevos ya caen más arriba`,
+  closedSign: 'Cerrado',
   movedUp: (floor: number) => `⬆️ ¡Al Piso ${floor + 1}!`,
   floorFull: (floor: number) => `El Piso ${floor + 1} está lleno`,
   maxLevel: '¡Nivel máximo! Esta criatura ya no evoluciona',

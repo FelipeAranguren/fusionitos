@@ -31,11 +31,13 @@ export class ToastQueue {
   private showNext(): void {
     const text = this.queue.shift();
     if (text === undefined) return;
-    const label = this.scene.add.text(0, 0, text, textStyle({ size: 40, stroke: false })).setOrigin(0.5);
+    // Los avisos largos pasan a dos líneas en lugar de salirse de la pantalla.
+    const style = { ...textStyle({ size: 40, stroke: false }), align: 'center', wordWrap: { width: GAME_WIDTH - 160 } };
+    const label = this.scene.add.text(0, 0, text, style).setOrigin(0.5);
     const width = label.width + 80;
     const height = label.height + 36;
     const background = this.scene.add.graphics();
-    background.fillStyle(0x000000, 0.75).fillRoundedRect(-width / 2, -height / 2, width, height, height / 2);
+    background.fillStyle(0x000000, 0.75).fillRoundedRect(-width / 2, -height / 2, width, height, Math.min(height / 2, 44));
     const toast = this.scene.add.container(GAME_WIDTH / 2, LAYOUT.toastY + 20, [background, label]);
     toast.setDepth(900).setAlpha(0).setData('text', text);
     this.current = toast;

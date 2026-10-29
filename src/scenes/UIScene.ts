@@ -5,6 +5,7 @@ import { STRINGS } from '../config/strings.ts';
 import { ANIM, COLORS, GAME_WIDTH, LAYOUT } from '../config/visuals.ts';
 import { formatNumber } from '../core/format.ts';
 import { creatureConfig, floorConfig, unlockRequirementLevel } from '../core/levels.ts';
+import type { Entity } from '../core/types.ts';
 import { tabWindowStart } from '../view/tabWindow.ts';
 import { TEXTURES } from '../view/textures.ts';
 import { Button } from '../view/ui/Button.ts';
@@ -39,6 +40,12 @@ interface Shown {
 }
 
 /**
+ * Lo que se muestra de a uno, en orden: el popup de una criatura nueva y el cierre de un piso
+ * (persiana en ese piso y después el paso al piso de los huevos).
+ */
+type Step = { kind: 'discovery'; level: number } | { kind: 'closing'; floor: number; entities: readonly Readonly<Entity>[] };
+
+/**
  * HUD, pestañas de pisos y popups, encima del campo. Lee los valores continuos del modelo
  * en cada frame y reacciona a los eventos discretos (descubrimientos, desbloqueos, reinicio).
  */
@@ -61,7 +68,9 @@ export class UIScene extends Phaser.Scene {
   private toasts!: ToastQueue;
   private modal: Modal | null = null;
   private shop: ShopPopup | null = null;
-  private readonly discoveryQueue: number[] = [];
+  private readonly steps: Step[] = [];
+  /** Piso cuyo cierre se está mostrando. */
+  private closingFloor: number | null = null;
   private unsubscribers: (() => void)[] = [];
   private shown!: Shown;
 
@@ -122,14 +131,17 @@ export class UIScene extends Phaser.Scene {
 
     const { model, ui } = this.ctx;
     this.unsubscribers = [
-      model.events.on('creatureDiscovered', ({ level }) => this.queueDiscovery(level)),
+      model.events.on('creatureDiscovered', ({ level }) => this.queueStep({ kind: 'discovery', level })),
       // La pestaña salta desde update(), cuando ya se acomodó la barra.
       model.events.on('floorUnlocked', ({ floor }) => this.toasts.push(STRINGS.floorUnlocked(floor, floorConfig(floor).name))),
+      // Llega después del descubrimiento que lo causó: primero el popup, después la persiana.
+      model.events.on('floorClosed', ({ floor, entities }) => this.queueStep({ kind: 'closing', floor, entities })),
       model.events.on('stateReset', () => {
-        this.discoveryQueue.length = 0;
+        this.steps.length = 0;
         this.toasts.clear();
       }),
       ui.on('toast', ({ text }) => this.toasts.push(text)),
+      ui.on('closingShown', ({ floor }) => this.finishClosing(floor)),
     ];
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       for (const unsubscribe of this.unsubscribers) unsubscribe();
@@ -141,7 +153,7 @@ export class UIScene extends Phaser.Scene {
     const { model, view } = this.ctx;
     const shown = this.shown;
     this.shop?.refresh();
-    if (view.welcome && !this.modal) {
+    if (view.welcome && !this.busy) {
       this.modal = openWelcomePopup(this, view.welcome, () => this.onModalClosed());
       view.welcome = null;
       this.ctx.audio.play('welcome');
@@ -161,9 +173,7 @@ export class UIScene extends Phaser.Scene {
       // Al arrancar se ubica de una; después, la barra se desliza hasta ahí.
       this.tabStrip.scrollTo(tabWindowStart(floor, eggFloor), shown.floor >= 0);
     }
-    // Sube al desbloquear pisos; al reiniciar baja, y eso no se avisa.
-    const eggFloorRose = eggFloorChanged && shown.eggFloor >= 0 && eggFloor > shown.eggFloor;
-    if (eggFloorRose) this.toasts.push(STRINGS.eggFloorMoved(eggFloor, floorConfig(eggFloor).name));
+    // Que los huevos subieron se avisa al final del cierre del piso de abajo (finishClosing).
     shown.floor = floor;
     shown.eggFloor = eggFloor;
 
@@ -205,7 +215,6 @@ export class UIScene extends Phaser.Scene {
     }
 
     this.updateTabs(floor, eggFloor);
-    if (eggFloorRose) this.tabStrip.attention(eggFloor);
   }
 
   /** Botones y pestañas visibles, con su centro en coordenadas del juego (para el hook de debug). */
@@ -327,10 +336,10 @@ export class UIScene extends Phaser.Scene {
 
   /** Acceso directo: el diálogo del navegador si lo hay; si no, los pasos para hacerlo a mano. */
   private async install(): Promise<void> {
-    if (this.modal) return;
+    if (this.busy) return;
     this.ctx.audio.play('click');
     if (await this.ctx.install.prompt()) return;
-    if (this.modal) return;
+    if (this.busy) return;
     this.modal = openInstallHelpPopup(this, this.ctx.install.platform, () => this.onModalClosed());
   }
 
@@ -399,15 +408,29 @@ export class UIScene extends Phaser.Scene {
     }
     this.tabStrip.render(floor, (index) => ({
       unlocked: shown.unlocked[index],
+      closed: model.isFloorClosed(index),
       count: shown.counts[index],
       full: model.isFloorFull(index),
       eggs: index === eggFloor,
     }));
   }
 
+  /**
+   * Hay algo en pantalla o por mostrarse (popup, cierre de un piso): mientras tanto no se cambia
+   * de piso ni se abren la tienda u otros popups.
+   */
+  private get busy(): boolean {
+    return this.modal !== null || this.closingFloor !== null || this.steps.length > 0;
+  }
+
   private onTabSelected(floor: number): void {
-    if (this.modal) return;
+    if (this.busy) return;
     const { model } = this.ctx;
+    if (model.isFloorClosed(floor)) {
+      this.ctx.audio.play('denied');
+      this.toasts.push(STRINGS.floorClosed(floor, floorConfig(floor).name));
+      return;
+    }
     if (!model.isFloorUnlocked(floor)) {
       this.ctx.audio.play('denied');
       // Para el piso que sigue se dice qué fusionar; más arriba no, para no adelantar criaturas.
@@ -422,33 +445,56 @@ export class UIScene extends Phaser.Scene {
   }
 
   private goToEggFloor(): void {
-    if (this.modal) return;
+    if (this.busy) return;
     this.ctx.ui.emit('selectFloor', { floor: this.ctx.model.eggFloor });
   }
 
   private stepFloor(direction: 1 | -1): void {
-    if (this.modal) return;
-    const floor = this.ctx.model.adjacentUnlockedFloor(this.ctx.view.floor, direction);
+    if (this.busy) return;
+    const floor = this.ctx.model.adjacentOpenFloor(this.ctx.view.floor, direction);
     if (floor !== null) this.ctx.ui.emit('selectFloor', { floor });
   }
 
-  private queueDiscovery(level: number): void {
-    this.discoveryQueue.push(level);
+  private queueStep(step: Step): void {
+    this.steps.push(step);
     // Espera a que termine la animación que lo causó (apertura o merge).
-    this.time.delayedCall(ANIM.discoveryDelayMs, () => this.showNextDiscovery());
+    this.time.delayedCall(ANIM.discoveryDelayMs, () => this.runNextStep());
   }
 
-  private showNextDiscovery(): void {
-    if (this.modal) return; // Se muestra al cerrar el popup actual.
-    const level = this.discoveryQueue.shift();
-    if (level === undefined) return;
-    this.modal = openDiscoveryPopup(this, level, () => this.onModalClosed());
-    this.ctx.audio.play('discover');
+  /** Muestra lo próximo de la cola, si no hay otra cosa en pantalla (si la hay, sigue cuando termine). */
+  private runNextStep(): void {
+    if (this.modal || this.closingFloor !== null) return;
+    const step = this.steps.shift();
+    if (!step) return;
+    if (step.kind === 'discovery') {
+      this.modal = openDiscoveryPopup(this, step.level, () => this.onModalClosed());
+      this.ctx.audio.play('discover');
+      return;
+    }
+    // El campo va a ese piso, baja la persiana y avisa con closingShown.
+    const { floor } = step;
+    this.closingFloor = floor;
+    this.ctx.ui.emit('showClosing', { floor, entities: step.entities });
+    // Por si el campo no llega a avisar: la interfaz no puede quedar trabada.
+    this.time.delayedCall(ANIM.closingTimeoutMs, () => this.finishClosing(floor));
+  }
+
+  /** Terminó la persiana: se pasa al piso de los huevos y se avisa que ahora caen ahí. */
+  private finishClosing(floor: number): void {
+    if (this.closingFloor !== floor) return; // Ya terminó (el aviso y el plazo de respaldo llaman los dos).
+    this.closingFloor = null;
+    const eggFloor = this.ctx.model.eggFloor;
+    this.ctx.ui.emit('selectFloor', { floor: eggFloor });
+    this.time.delayedCall(ANIM.floorFadeMs * 2, () => {
+      this.toasts.push(STRINGS.eggFloorMoved(eggFloor, floorConfig(eggFloor).name));
+      this.tabStrip.attention(eggFloor);
+      this.runNextStep();
+    });
   }
 
   /** La tienda del piso que se ve. */
   private openShop(): void {
-    if (this.modal) return;
+    if (this.busy) return;
     this.shop = new ShopPopup(
       this,
       this.ctx.model,
@@ -463,7 +509,7 @@ export class UIScene extends Phaser.Scene {
   }
 
   private confirmReset(): void {
-    if (this.modal) return;
+    if (this.busy) return;
     this.modal = openConfirmPopup(
       this,
       {
@@ -479,6 +525,6 @@ export class UIScene extends Phaser.Scene {
 
   private onModalClosed(): void {
     this.modal = null;
-    this.time.delayedCall(150, () => this.showNextDiscovery());
+    this.time.delayedCall(150, () => this.runNextStep());
   }
 }

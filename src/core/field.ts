@@ -29,12 +29,40 @@ export function eggFloor(state: DeepReadonly<GameState>): number {
   return Math.max(0, highestUnlockedFloor(state) - BALANCE.EGG_FLOOR_LAG);
 }
 
-/** Próximo piso desbloqueado hacia arriba (1) o hacia abajo (−1), o null si no hay. */
-export function adjacentUnlockedFloor(state: DeepReadonly<GameState>, floor: number, direction: 1 | -1): number | null {
+/**
+ * Los pisos que quedaron por debajo del de los huevos están cerrados: sus criaturas ya no importan,
+ * así que se vacían y no se puede ir a verlos.
+ */
+export function isFloorClosed(state: DeepReadonly<GameState>, floor: number): boolean {
+  return floor < eggFloor(state);
+}
+
+/** Si se puede ir a ver un piso: desbloqueado y no cerrado. */
+export function isFloorOpen(state: DeepReadonly<GameState>, floor: number): boolean {
+  return isFloorUnlocked(state, floor) && !isFloorClosed(state, floor);
+}
+
+/** Próximo piso abierto hacia arriba (1) o hacia abajo (−1), o null si no hay. */
+export function adjacentOpenFloor(state: DeepReadonly<GameState>, floor: number, direction: 1 | -1): number | null {
   for (let candidate = floor + direction; candidate >= 0 && candidate < state.floors.length; candidate += direction) {
-    if (isFloorUnlocked(state, candidate)) return candidate;
+    if (isFloorOpen(state, candidate)) return candidate;
   }
   return null;
+}
+
+export interface EmptiedFloor {
+  floor: number;
+  entities: Entity[];
+}
+
+/** Vacía los pisos cerrados. Devuelve lo que sacó de cada uno (solo de los que tenían algo). */
+export function emptyClosedFloors(state: GameState): EmptiedFloor[] {
+  const emptied: EmptiedFloor[] = [];
+  for (let floor = 0; floor < eggFloor(state); floor++) {
+    const entities = state.floors[floor].entities.splice(0);
+    if (entities.length > 0) emptied.push({ floor, entities });
+  }
+  return emptied;
 }
 
 export interface EntityLocation {

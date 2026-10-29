@@ -1,17 +1,18 @@
 import Phaser from 'phaser';
 import type { FloorConfig } from '../config/creatures.ts';
 import { STRINGS } from '../config/strings.ts';
-import { ANIM, LAYOUT, SIZES } from '../config/visuals.ts';
+import { ANIM, COLORS, DEPTH, LAYOUT, SHUTTER, SIZES } from '../config/visuals.ts';
 import type { GameEvents } from '../core/GameModel.ts';
 import { floorConfig, tierOfLevel } from '../core/levels.ts';
 import type { MergeResult } from '../core/merge.ts';
 import { mulberry32 } from '../core/rng.ts';
-import type { Creature, DeepReadonly, Egg, EntityId } from '../core/types.ts';
+import type { Creature, DeepReadonly, Egg, Entity, EntityId } from '../core/types.ts';
 import { CreatureView } from '../view/CreatureView.ts';
 import { EggView } from '../view/EggView.ts';
 import { Effects } from '../view/effects.ts';
 import { clampToField, toField, toWorld } from '../view/fieldSpace.ts';
-import { ensureDecorTexture } from '../view/textures.ts';
+import { TEXTURES, ensureDecorTexture } from '../view/textures.ts';
+import { textStyle } from '../view/ui/textStyle.ts';
 import type { GameContext } from './context.ts';
 
 export interface DebugView {
@@ -34,6 +35,8 @@ export class GameScene extends Phaser.Scene {
   private effects!: Effects;
   private dropTarget: CreatureView | null = null;
   private switching = false;
+  /** Mostrando el cierre del piso: lo que tenía antes de vaciarse (en el juego ya no está). */
+  private closingEntities: readonly Readonly<Entity>[] | null = null;
   private unsubscribers: (() => void)[] = [];
 
   constructor(ctx: GameContext) {
@@ -41,8 +44,9 @@ export class GameScene extends Phaser.Scene {
     this.ctx = ctx;
   }
 
-  init(data: { floor?: number }): void {
+  init(data: { floor?: number; closing?: readonly Readonly<Entity>[] }): void {
     this.floorIndex = data.floor ?? this.ctx.view.floor;
+    this.closingEntities = data.closing ?? null;
     // La instancia se reutiliza al reiniciar: las vistas viejas ya las destruyó Phaser.
     this.creatures.clear();
     this.eggs.clear();
@@ -61,7 +65,17 @@ export class GameScene extends Phaser.Scene {
     this.effects = new Effects(this, floor.accentColor);
     this.setupDrag();
     this.subscribe();
-    this.buildViews();
+    if (this.closingEntities) {
+      // Se ve lo que había, sin poder tocarlo, hasta que baja la persiana.
+      this.input.enabled = false;
+      for (const entity of this.closingEntities) {
+        if (entity.kind === 'egg') this.addEgg(entity, false);
+        else this.addCreature(entity, 'none');
+      }
+      this.time.delayedCall(ANIM.floorFadeMs + ANIM.closingStartMs, () => this.playClosing());
+    } else {
+      this.buildViews();
+    }
     this.cameras.main.fadeIn(ANIM.floorFadeMs);
   }
 
@@ -131,6 +145,7 @@ export class GameScene extends Phaser.Scene {
       // Al reiniciar, los pisos de arriba vuelven a bloquearse: se vuelve al piso 1.
       events.on('stateReset', () => (this.floorIndex === 0 ? this.rebuild() : this.switchFloor(0))),
       this.ctx.ui.on('selectFloor', ({ floor }) => this.switchFloor(floor)),
+      this.ctx.ui.on('showClosing', ({ floor, entities }) => this.switchFloor(floor, entities)),
     ];
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       for (const unsubscribe of this.unsubscribers) unsubscribe();
@@ -138,14 +153,88 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  /** Muestra otro piso (si está desbloqueado): fundido y la escena se reinicia con ese piso. */
-  private switchFloor(floor: number): void {
-    if (this.switching || floor === this.floorIndex || !this.ctx.model.isFloorUnlocked(floor)) return;
+  /**
+   * Muestra otro piso (si está abierto): fundido y la escena se reinicia con ese piso.
+   * Para mostrar un cierre (`closing`) va aunque el piso ya esté cerrado, o sea este mismo.
+   */
+  private switchFloor(floor: number, closing?: readonly Readonly<Entity>[]): void {
+    if (this.switching) return;
+    if (!closing && (floor === this.floorIndex || !this.ctx.model.isFloorOpen(floor))) return;
     this.switching = true;
     this.ctx.audio.play('whoosh');
     this.input.enabled = false;
     this.cameras.main.fadeOut(ANIM.floorFadeMs, 0, 0, 0);
-    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.restart({ floor }));
+    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.restart({ floor, closing }));
+  }
+
+  /** Cierre del piso: baja una persiana sobre lo que había y queda con candado. Al final avisa a la interfaz. */
+  private playClosing(): void {
+    const { field, fieldRadius } = LAYOUT;
+    const bottom = field.y + field.height;
+    const slats = this.add.graphics();
+    for (let y = field.y; y < bottom; y += SHUTTER.slatHeight) {
+      slats.fillStyle(SHUTTER.color, 1).fillRect(field.x, y, field.width, SHUTTER.slatHeight);
+      slats.fillStyle(SHUTTER.light, 1).fillRect(field.x, y + 4, field.width, 8);
+      slats.fillStyle(SHUTTER.dark, 1).fillRect(field.x, y + SHUTTER.slatHeight - 8, field.width, 8);
+    }
+    slats.fillStyle(SHUTTER.frame, 1).fillRect(field.x, bottom - 44, field.width, 44);
+    slats.fillStyle(SHUTTER.dark, 1).fillRoundedRect(field.x + field.width / 2 - 80, bottom - 32, 160, 18, 9);
+    // Empieza arriba del campo, recortada por su borde: entra desde la caja de arriba.
+    const shutter = this.add.container(0, -field.height, [slats]).setDepth(DEPTH.shutter);
+    const shape = this.make.graphics({}, false);
+    shape.fillStyle(0xffffff, 1).fillRoundedRect(field.x, field.y, field.width, field.height, fieldRadius);
+    shutter.setMask(shape.createGeometryMask());
+    const box = this.add.graphics().setDepth(DEPTH.shutter + 1).setAlpha(0);
+    box.fillStyle(SHUTTER.frame, 1).fillRoundedRect(field.x - 8, field.y - 16, field.width + 16, 48, 20);
+    this.tweens.add({ targets: box, alpha: 1, duration: 200 });
+
+    this.ctx.audio.play('shutter');
+    this.tweens.add({
+      targets: shutter,
+      y: 0,
+      duration: ANIM.shutterDropMs,
+      ease: 'Quad.easeIn',
+      onComplete: () => this.onShutterDown(shutter),
+    });
+  }
+
+  private onShutterDown(shutter: Phaser.GameObjects.Container): void {
+    this.ctx.audio.play('shutterLand');
+    this.cameras.main.shake(140, 0.004);
+    this.tweens.add({ targets: shutter, y: -18, duration: 90, yoyo: true, ease: 'Quad.easeOut' });
+    // Lo que había quedó tapado: en el juego ya no existe.
+    for (const view of this.creatures.values()) view.destroy();
+    for (const view of this.eggs.values()) view.destroy();
+    this.creatures.clear();
+    this.eggs.clear();
+
+    const { field } = LAYOUT;
+    const x = field.x + field.width / 2;
+    const y = field.y + field.height / 2 - 60;
+    const lock = this.add.image(x, y, TEXTURES.lock).setDepth(DEPTH.shutter + 2).setDisplaySize(SHUTTER.lockSize, SHUTTER.lockSize);
+    const lockScale = lock.scaleX;
+    const label = this.add.text(0, 0, STRINGS.closedSign, textStyle({ size: 52, weight: 700, color: COLORS.textDark, stroke: false }));
+    label.setOrigin(0.5);
+    const plateWidth = label.width + 90;
+    const plate = this.add.graphics();
+    plate.fillStyle(COLORS.card, 1).fillRoundedRect(-plateWidth / 2, -48, plateWidth, 96, 24);
+    plate.lineStyle(6, SHUTTER.frame, 1).strokeRoundedRect(-plateWidth / 2, -48, plateWidth, 96, 24);
+    const sign = this.add.container(x, y + SHUTTER.lockSize * 0.8, [plate, label]).setDepth(DEPTH.shutter + 2);
+    lock.setScale(0);
+    sign.setScale(0);
+    const delay = 250;
+    this.tweens.add({
+      targets: lock,
+      scale: lockScale,
+      delay,
+      duration: ANIM.lockPopMs,
+      ease: 'Back.easeOut(2.2)',
+      onStart: () => this.ctx.audio.play('lock'),
+    });
+    this.tweens.add({ targets: sign, scale: 1, delay: delay + 150, duration: ANIM.lockPopMs, ease: 'Back.easeOut' });
+    this.time.delayedCall(delay + ANIM.lockPopMs + ANIM.closedHoldMs, () =>
+      this.ctx.ui.emit('closingShown', { floor: this.floorIndex }),
+    );
   }
 
   private buildViews(): void {

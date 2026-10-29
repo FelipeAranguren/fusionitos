@@ -79,6 +79,24 @@ export const ANIM = {
   toastMs: 2300,
   /** Fundido del campo al cambiar de piso (cada mitad). */
   floorFadeMs: 140,
+  /** Cierre de un piso: pausa antes de que baje la persiana, su caída y cuánto se ve el candado. */
+  closingStartMs: 450,
+  shutterDropMs: 900,
+  lockPopMs: 420,
+  closedHoldMs: 1100,
+  /** Si el campo no avisa que terminó de mostrar el cierre, la interfaz sigue igual a los ms. */
+  closingTimeoutMs: 8000,
+} as const;
+
+/** La persiana que cierra un piso. */
+export const SHUTTER = {
+  slatHeight: 54,
+  color: 0x9a6232,
+  light: 0xbd844a,
+  dark: 0x6b3f1c,
+  /** Barra de abajo y caja de arriba. */
+  frame: 0x4a2c10,
+  lockSize: 250,
 } as const;
 
 /** Deslizamiento de la barra de pestañas. Las posiciones se miden en pestañas. */
@@ -98,6 +116,8 @@ export const TAB_SCROLL = {
 } as const;
 
 export const DEPTH = {
+  /** Por encima de las criaturas (su profundidad es su y) y por debajo de lo que se arrastra. */
+  shutter: 5_000,
   dragged: 10_000,
   effects: 11_000,
   floatingText: 12_000,

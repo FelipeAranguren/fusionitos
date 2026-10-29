@@ -2,6 +2,7 @@ import type { AudioPort } from '../audio/AudioEngine.ts';
 import type { OfflineEarnings } from '../core/economy.ts';
 import type { Emitter } from '../core/emitter.ts';
 import type { GameModel } from '../core/GameModel.ts';
+import type { Entity } from '../core/types.ts';
 import type { InstallPrompt } from '../install/InstallPrompt.ts';
 
 /** Avisos y pedidos entre escenas (no son cambios de estado del juego, por eso no salen del modelo). */
@@ -9,6 +10,10 @@ export interface UiEvents {
   toast: { text: string };
   /** Pedido de mostrar un piso (pestañas, teclado, debug). GameScene valida y cambia. */
   selectFloor: { floor: number };
+  /** La UIScene pide mostrar el cierre de un piso: el campo baja la persiana sobre lo que tenía. */
+  showClosing: { floor: number; entities: readonly Readonly<Entity>[] };
+  /** El campo terminó de mostrar el cierre. */
+  closingShown: { floor: number };
 }
 
 /** Estado de la vista compartido entre escenas. No se guarda. */

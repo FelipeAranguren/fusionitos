@@ -2,13 +2,15 @@ import Phaser from 'phaser';
 import { BALANCE } from '../../config/balance.ts';
 import { FLOORS } from '../../config/creatures.ts';
 import { STRINGS } from '../../config/strings.ts';
-import { COLORS, GAME_WIDTH, LAYOUT } from '../../config/visuals.ts';
+import { COLORS, GAME_WIDTH, LAYOUT, SHUTTER } from '../../config/visuals.ts';
 import { hatchLevel } from '../../core/levels.ts';
 import { TEXTURES, ensureCreatureTexture } from '../textures.ts';
 import { textStyle } from './textStyle.ts';
 
 export interface FloorTabState {
   unlocked: boolean;
+  /** Quedó por debajo del piso de los huevos: persiana baja y candado. */
+  closed: boolean;
   count: number;
   full: boolean;
   /** Es el piso donde caen los huevos. */
@@ -55,7 +57,7 @@ export class FloorTab extends Phaser.GameObjects.Container {
   }
 
   render(current: boolean, state: FloorTabState): void {
-    const key = `${current}|${state.unlocked}|${state.count}|${state.full}|${state.eggs}`;
+    const key = `${current}|${state.unlocked}|${state.closed}|${state.count}|${state.full}|${state.eggs}`;
     if (key === this.drawn) return;
     this.drawn = key;
 
@@ -65,7 +67,20 @@ export class FloorTab extends Phaser.GameObjects.Container {
     const width = TAB_WIDTH;
     const height = TABS.height;
     const g = this.panel.clear();
-    if (state.unlocked) {
+    if (state.unlocked && state.closed) {
+      // Persiana baja: tablillas marrones, candado y el nombre apagado.
+      const line = current ? 8 : 4;
+      g.fillStyle(0x000000, 0.25).fillRoundedRect(-width / 2, -height / 2 + 8, width, height, radius);
+      g.fillStyle(SHUTTER.color, 1).fillRoundedRect(-width / 2, -height / 2, width, height, radius);
+      for (let y = -height / 2 + 30; y < height / 2 - 14; y += 26) {
+        g.fillStyle(SHUTTER.dark, 0.7).fillRect(-width / 2 + 6, y, width - 12, 4);
+      }
+      g.lineStyle(line, current ? 0xffffff : SHUTTER.frame, 1);
+      g.strokeRoundedRect(-width / 2 + line / 2, -height / 2 + line / 2, width - line, height - line, radius - line / 2);
+      this.icon.setTexture(TEXTURES.lock).setDisplaySize(58, 58).setAlpha(1);
+      this.fitTitle(config.name).setAlpha(0.75);
+      this.countText.setVisible(false);
+    } else if (state.unlocked) {
       const line = current ? 8 : 4;
       g.fillStyle(0x000000, 0.25).fillRoundedRect(-width / 2, -height / 2 + 8, width, height, radius);
       g.fillStyle(config.fieldColor, current ? 1 : 0.75).fillRoundedRect(-width / 2, -height / 2, width, height, radius);

@@ -4,14 +4,17 @@ import { offlineEarnings, tickIncome, totalIncomePerSecond, type CoinPop, type O
 import { hatchEgg, spawnEgg, tickEggs } from './eggs.ts';
 import { Emitter } from './emitter.ts';
 import {
-  adjacentUnlockedFloor,
+  adjacentOpenFloor,
   clamp01,
   eggFloor,
+  emptyClosedFloors,
   highestUnlockedFloor,
   findEntity,
   findSpawnPosition,
   floorEntityCount,
+  isFloorClosed,
   isFloorFull,
+  isFloorOpen,
   isFloorUnlocked,
 } from './field.ts';
 import { floorOfLevel, isValidLevel } from './levels.ts';
@@ -26,7 +29,7 @@ import {
   type PurchaseResult,
 } from './shop.ts';
 import { allocateId, createInitialState } from './state.ts';
-import type { Creature, DeepReadonly, Egg, EntityId, GameState } from './types.ts';
+import type { Creature, DeepReadonly, Egg, Entity, EntityId, GameState } from './types.ts';
 
 export interface GameEvents {
   eggSpawned: { floor: number; egg: Readonly<Egg> };
@@ -43,6 +46,8 @@ export interface GameEvents {
   coinsPopped: CoinPop;
   creatureDiscovered: { level: number };
   floorUnlocked: { floor: number };
+  /** Subió el piso de los huevos y este quedó cerrado: se vació (`entities`, lo que tenía). */
+  floorClosed: { floor: number; entities: readonly Readonly<Entity>[] };
   stateReset: Record<string, never>;
 }
 
@@ -58,6 +63,8 @@ export class GameModel {
   constructor(state: GameState = createInitialState(), rng: Rng = Math.random) {
     this.current = state;
     this.rng = rng;
+    // Los guardados de antes de que se cerraran los pisos pueden tener criaturas en pisos ya cerrados.
+    emptyClosedFloors(this.current);
   }
 
   get state(): DeepReadonly<GameState> {
@@ -102,8 +109,17 @@ export class GameModel {
     return isFloorUnlocked(this.current, floor);
   }
 
-  adjacentUnlockedFloor(floor: number, direction: 1 | -1): number | null {
-    return adjacentUnlockedFloor(this.current, floor, direction);
+  isFloorClosed(floor: number): boolean {
+    return isFloorClosed(this.current, floor);
+  }
+
+  /** Desbloqueado y no cerrado: se puede ir a verlo. */
+  isFloorOpen(floor: number): boolean {
+    return isFloorOpen(this.current, floor);
+  }
+
+  adjacentOpenFloor(floor: number, direction: 1 | -1): number | null {
+    return adjacentOpenFloor(this.current, floor, direction);
   }
 
   isDiscovered(level: number): boolean {
@@ -128,6 +144,7 @@ export class GameModel {
   }
 
   merge(sourceId: EntityId, targetId: EntityId): MergeResult {
+    const eggFloorBefore = eggFloor(this.current);
     const result = mergeCreatures(this.current, sourceId, targetId, this.rng);
     if (!result.ok) return result;
     this.events.emit('creaturesMerged', {
@@ -139,6 +156,7 @@ export class GameModel {
     });
     if (result.floorUnlocked) this.events.emit('floorUnlocked', { floor: result.createdFloor });
     if (result.discovered) this.events.emit('creatureDiscovered', { level: result.created.level });
+    this.closeForgottenFloors(eggFloorBefore);
     return result;
   }
 
@@ -182,6 +200,17 @@ export class GameModel {
     this.events.emit('stateReset', {});
   }
 
+  /** Si subió el piso de los huevos, cierra los que quedaron abajo: se vacían y se avisa de cada uno. */
+  private closeForgottenFloors(eggFloorBefore: number): void {
+    const now = eggFloor(this.current);
+    if (now <= eggFloorBefore) return;
+    const emptied = emptyClosedFloors(this.current);
+    for (let floor = eggFloorBefore; floor < now; floor++) {
+      const entities = emptied.find((item) => item.floor === floor)?.entities ?? [];
+      this.events.emit('floorClosed', { floor, entities });
+    }
+  }
+
   // --- Ayudas de desarrollo (las expone el hook de debug, solo en dev) ---
 
   /** Hace caer un huevo ya mismo, sin esperar el temporizador. */
@@ -195,16 +224,18 @@ export class GameModel {
     if (Number.isFinite(amount) && amount > 0) this.current.coins += amount;
   }
 
-  /** Agrega una criatura en su piso, si hay lugar. La marca descubierta sin popup. */
+  /** Agrega una criatura en su piso, si hay lugar y no está cerrado. La marca descubierta sin popup. */
   debugAddCreature(level: number): Creature | null {
     if (!isValidLevel(level)) return null;
     const floor = floorOfLevel(level);
-    if (isFloorFull(this.current, floor)) return null;
+    if (isFloorFull(this.current, floor) || isFloorClosed(this.current, floor)) return null;
+    const eggFloorBefore = eggFloor(this.current);
     const position = findSpawnPosition(this.current, floor, this.rng);
     const creature: Creature = { kind: 'creature', id: allocateId(this.current), level, ...position, payoutMs: 0 };
     this.current.floors[floor].entities.push(creature);
     markDiscovered(this.current, level);
     this.events.emit('creatureAdded', { floor, creature });
+    this.closeForgottenFloors(eggFloorBefore);
     return creature;
   }
 }

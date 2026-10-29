@@ -71,7 +71,7 @@ Todo el catálogo vive en `src/config/creatures.ts`. Cada criatura es `{ name, e
   |---|---|---|---|---|---|---|---|
   | Los huevos caen en | Piso 1 | Piso 2 | Piso 3 | … | Piso 7 | … | Piso 17 |
 
-- **Cuando sube:** aparece el aviso "🥚 ¡Ahora los huevos caen en el Piso N: nombre!" y la pestaña de ese piso salta. Los huevos que quedaron en el piso anterior se quedan ahí y se pueden abrir igual.
+- **Cuando sube:** el piso donde caían queda **cerrado** (§8): se vacía, con los huevos que tenía. Al final de la animación de cierre se pasa al piso nuevo de los huevos, aparece el aviso "🥚 ¡Ahora los huevos caen en el Piso N: nombre!" y su pestaña salta.
 - En una partida nueva, el primer huevo cae a **1 s**, para que el campo no arranque vacío.
 - **Dónde cae:** se sortean 12 posiciones candidatas y se elige la más alejada de las entidades existentes, para que no se amontonen.
 - **Animación de caída:** el huevo cae desde arriba con rebote y su sombra crece al acercarse al suelo. En reposo se balancea, invitando a tocarlo.
@@ -315,6 +315,7 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
 | 20 Galaxia | 3 h 56 min | 23 min |
 
 - **Total: 4 h 19 min**, igual con otras semillas. Los primeros pisos salen en pocos minutos; los últimos, en unos 20 cada uno.
+- Cerrar los pisos que quedan por debajo del de los huevos (§8) no cambia la tabla: lo que tenían rendía muy poco.
 - La velocidad del jugador casi no cambia el resultado: lo que manda es la tienda.
 - **Referencia:** con la economía de 5 pisos, el simulador tardaba 1.5–2 h en algo que un jugador real terminaba en 30–60 min. Una persona atenta puede ir más rápido que el simulador.
 - **Para ajustar la duración:** `SHOP_BASE_PRICE` la cambia de forma casi proporcional y `SHOP_PRICE_GROWTH`, de forma exponencial. Algunas pruebas:
@@ -334,6 +335,7 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
   - **La del piso que se ve:** queda levantada y con borde blanco.
   - **La del piso de los huevos:** lleva un 🥚 en la esquina.
   - **Bloqueada:** muestra 🔒 y "Piso N". Tocarla no cambia de piso: en el próximo a abrir, avisa qué fusionar ("Para abrir el Piso 3: fusioná Vaca + Vaca"); en los de más arriba, solo el orden ("El Piso 14 se abre después del Piso 13"), para no adelantar criaturas.
+  - **Cerrada:** persiana marrón con 🔒 y el nombre del piso. Tocarla no cambia de piso y avisa "🔒 El Piso 1 (Jardín) quedó cerrado: los huevos ya caen más arriba".
 - **Qué pisos se ven:** la barra se acomoda sola al cambiar de piso (se desliza hasta ahí). Deja el piso que se ve en el centro y, si entra, también el de los huevos: jugando en el piso más alto, se ven el de los huevos, el actual y el próximo a abrir.
 - **Deslizar la barra:** se arrastra con el dedo (o se usa la rueda del mouse) para mirar otros pisos, sin cambiar de piso.
   - Al soltarla se acomoda en una pestaña entera. Con un movimiento rápido sigue de largo (impulso); despacio, queda donde se la dejó.
@@ -341,7 +343,7 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
   - Un toque sin arrastrar elige la pestaña.
 - **Flechas de la barra:** corren la vista de a 5 pisos, sin cambiar de piso (sirven para mirar qué viene o volver a uno lejano). En los extremos se apagan.
 - **Otras formas de cambiar de piso:**
-  - En escritorio, las flechas ← y → del teclado van al piso desbloqueado anterior o siguiente.
+  - En escritorio, las flechas ← y → del teclado van al piso abierto anterior o siguiente (se saltean los cerrados).
   - Tocar "Los huevos caen en el Piso N ›" en el HUD lleva a ese piso.
 - **Cambio de piso:** el campo hace un fundido y se redibuja con el color, la decoración y las criaturas de ese piso. La página toma el color del piso.
 - **Campos independientes:** cada piso tiene su propio campo y su capacidad de 12. Las criaturas de cada piso se fusionan ahí; dos tier 6 suben al piso siguiente.
@@ -350,6 +352,21 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
 - **Avisos:** cuando se desbloquea un piso o le llega una criatura mientras no se lo ve, su pestaña late. Si la pestaña no está a la vista, late la flecha de ese lado.
 - **Al abrir el juego** (desde el link, el acceso directo o al recargar) se ve el piso más alto desbloqueado, que es donde avanza la partida. El piso que se mira es estado de la vista, no se guarda.
 - **Al reiniciar** se vuelve al piso 1 y los demás se bloquean.
+
+### Pisos cerrados
+
+- **Cuáles:** los que quedan por debajo del piso de los huevos (§4). Cuando los huevos suben, el piso donde caían queda "en el olvido": sus criaturas rinden muy poco al lado de las de arriba, así que **desaparecen**, con sus huevos. El piso no se puede volver a ver y no genera ingreso.
+- **Qué se ve, en orden** (nada se pisa con la apertura del piso nuevo):
+  1. el merge que abre el piso nuevo y el popup de su criatura;
+  2. al cerrar el popup, el campo va al piso que se cierra y se ven sus criaturas por última vez;
+  3. baja una persiana marrón de tablillas desde una caja arriba del campo (traqueteo), golpea abajo (sacudón) y tapa todo;
+  4. aparece un candado 🔒 grande con un cartel "Cerrado";
+  5. pasa al piso nuevo de los huevos, con el aviso "🥚 ¡Ahora los huevos caen en el Piso N: nombre!" y su pestaña latiendo.
+
+  Mientras dura no se puede tocar el campo, cambiar de piso ni abrir la tienda. Si se cierran varios pisos juntos (solo con herramientas de debug), cada uno tiene su persiana, uno detrás del otro.
+- **Lógica:** el cierre ocurre en el juego al instante, junto con el merge; la persiana muestra lo que había antes de vaciarse.
+- **Guardados anteriores:** al cargar, los pisos que ya estaban por debajo del de los huevos se vacían sin animación.
+- **Tienda:** no vende criaturas de pisos cerrados.
 
 ## 9. Interfaz — FASES 1 a 3
 
@@ -360,8 +377,8 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
   - la capacidad del piso que se ve ("7/12").
 - **Campo:** fondo del color del piso con decoración tenue.
 - **Banner** "¡Campo lleno!" mientras no quede lugar en el piso que se ve.
-- **Popups:** "¡Nueva criatura descubierta!", la tienda, la bienvenida tras una ausencia y la confirmación de reinicio. Se muestran de a uno y, mientras están abiertos, bloquean el campo, las pestañas y el teclado.
-- **Toasts:** avisos cortos ("¡Piso 2 desbloqueado!", "¡Ahora los huevos caen en el Piso 2: Granja!", "El Piso 2 está lleno", "¡Nivel máximo!", qué abre un piso bloqueado).
+- **Popups:** "¡Nueva criatura descubierta!", la tienda, la bienvenida tras una ausencia, la confirmación de reinicio y los pasos del acceso directo. Se muestran de a uno y, mientras están abiertos, bloquean el campo, las pestañas y el teclado. Los descubrimientos y los cierres de pisos (§8) van en una misma cola, en el orden en que pasaron.
+- **Toasts:** avisos cortos ("¡Piso 2 desbloqueado!", "¡Ahora los huevos caen en el Piso 2: Granja!", "El Piso 2 está lleno", "¡Nivel máximo!", qué abre un piso bloqueado, que un piso quedó cerrado). Los largos pasan a dos líneas.
 - **Pie:** las pestañas de pisos (5 a la vista, deslizables y con flechas) y, debajo, una pista de cómo jugar, el botón verde 📲 de acceso directo (cuando se ofrece, §14), los botones redondos 🔊 (efectos) y 🎵 (música) y el botón **Reiniciar** (abajo, para no tocarlo sin querer). Si la pista no entra antes de los botones, se achica.
 
 ## 10. Guardado — FASE 1
@@ -449,6 +466,10 @@ Las constantes visuales (tamaños, velocidades de deambular, duraciones de anima
 - [x] Instalable como app (manifest e íconos): abre a pantalla completa, en vertical.
 - [x] Botón 📲 en el pie: el diálogo del navegador, o los pasos para Android e iPhone.
 
+### Extra — pisos cerrados ✅
+- [x] Cuando los huevos suben, el piso de abajo se cierra: se vacía y queda con candado.
+- [x] Animación en orden: popup de la criatura nueva, persiana en el piso que se cierra y paso al piso de los huevos.
+
 ### Ideas futuras (sin fase asignada)
 Arte definitivo para las 120 criaturas, logros, tutorial guiado y juego sin conexión.
 
@@ -468,6 +489,7 @@ Todo se sintetiza en el navegador con Web Audio: no hay archivos de audio ni lic
 | Algo que no se puede (botón gris, piso bloqueado, merge rechazado) | `denied` |
 | Popup de criatura nueva / bienvenida | `discover` / `welcome` (cascada de monedas) |
 | Cambio de piso | `whoosh` |
+| Se cierra un piso | persiana que baja traqueteando (`shutter`), golpe al llegar abajo (`shutterLand`) y clic del candado (`lock`) |
 | Botones | `click` |
 
 - **Música:** loop original de 16 compases (I–vi–IV–V en Do mayor, 100 BPM, unos 38 s), con melodía, arpegio, bajo (octava 3), un shaker suave y eco sobre la melodía. No tiene bombo. Va bajita: acompaña sin tapar.

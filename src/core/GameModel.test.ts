@@ -72,6 +72,45 @@ describe('GameModel', () => {
     expect(model.incomePerSecond).toBe(244.140625);
   });
 
+  it('si sube el piso de los huevos, el de abajo se cierra: se vacía y avisa con floorClosed', () => {
+    const state = emptyState();
+    state.discovered = [1, 7, 13, 19, 24];
+    const left = addCreature(state, 3);
+    const egg = addEgg(state, 0, 0.5, 0.5);
+    const a = addCreature(state, 24);
+    const b = addCreature(state, 24, 0.2, 0.2);
+    const model = modelWith(state);
+    const order: string[] = [];
+    model.events.on('floorUnlocked', ({ floor }) => order.push(`unlocked:${floor}`));
+    model.events.on('creatureDiscovered', ({ level }) => order.push(`discovered:${level}`));
+    model.events.on('floorClosed', ({ floor, entities }) => order.push(`closed:${floor}:${entities.map((e) => e.id).join(',')}`));
+
+    expect(model.merge(a.id, b.id).ok).toBe(true);
+    expect(order).toEqual(['unlocked:4', 'discovered:25', `closed:0:${left.id},${egg.id}`]);
+    expect(model.eggFloor).toBe(1);
+    expect(model.floorCount(0)).toBe(0);
+    expect(model.isFloorClosed(0)).toBe(true);
+    expect(model.isFloorOpen(0)).toBe(false);
+  });
+
+  it('un guardado con criaturas en pisos ya cerrados se carga con esos pisos vacíos', () => {
+    const state = emptyState();
+    state.discovered = [7, 13, 19, 25, 31];
+    addCreature(state, 2);
+    addCreature(state, 8);
+    addCreature(state, 14);
+    const model = modelWith(state);
+    expect([0, 1, 2].map((floor) => model.floorCount(floor))).toEqual([0, 0, 1]);
+  });
+
+  it('la tienda no vende criaturas de pisos cerrados', () => {
+    const state = emptyState();
+    state.discovered = [1, 2, 3, 7, 13, 19, 25];
+    state.coins = 1e9;
+    const model = modelWith(state);
+    expect(model.checkPurchase(1)).toEqual({ ok: false, reason: 'floor-closed' });
+  });
+
   it('un merge rechazado no emite nada', () => {
     const state = emptyState();
     const a = addCreature(state, 1);

@@ -1,6 +1,6 @@
 import { BALANCE } from '../config/balance.ts';
 import { maxDiscoveredLevel } from './discovery.ts';
-import { findSpawnPosition, isFloorFull } from './field.ts';
+import { findSpawnPosition, isFloorClosed, isFloorFull } from './field.ts';
 import { floorOfLevel, isValidLevel } from './levels.ts';
 import type { Rng } from './rng.ts';
 import { allocateId } from './state.ts';
@@ -26,7 +26,7 @@ export function priceOf(state: DeepReadonly<GameState>, level: number): number {
   return creaturePrice(level, purchasesOf(state, level));
 }
 
-export type PurchaseFailReason = 'invalid-level' | 'locked' | 'floor-full' | 'not-enough-coins';
+export type PurchaseFailReason = 'invalid-level' | 'locked' | 'floor-closed' | 'floor-full' | 'not-enough-coins';
 
 export type PurchaseCheck = { ok: true; price: number; floor: number } | { ok: false; reason: PurchaseFailReason };
 
@@ -35,6 +35,7 @@ export function checkPurchase(state: DeepReadonly<GameState>, level: number): Pu
   if (!isValidLevel(level)) return { ok: false, reason: 'invalid-level' };
   if (level > maxBuyableLevel(state)) return { ok: false, reason: 'locked' };
   const floor = floorOfLevel(level);
+  if (isFloorClosed(state, floor)) return { ok: false, reason: 'floor-closed' };
   if (isFloorFull(state, floor)) return { ok: false, reason: 'floor-full' };
   const price = priceOf(state, level);
   if (state.coins < price) return { ok: false, reason: 'not-enough-coins' };

@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { adjacentUnlockedFloor, highestUnlockedFloor, isFloorFull, isFloorUnlocked } from './field.ts';
-import { addCreature, emptyState, fillWithCreatures } from './test-helpers.ts';
+import {
+  adjacentOpenFloor,
+  emptyClosedFloors,
+  highestUnlockedFloor,
+  isFloorClosed,
+  isFloorFull,
+  isFloorOpen,
+  isFloorUnlocked,
+} from './field.ts';
+import { addCreature, addEgg, emptyState, fillWithCreatures } from './test-helpers.ts';
 
 describe('pisos desbloqueados', () => {
   it('el piso 1 siempre está abierto; los demás, al descubrir su tier 1', () => {
@@ -21,21 +29,60 @@ describe('pisos desbloqueados', () => {
     expect(highestUnlockedFloor(state)).toBe(19);
   });
 
-  it('adjacentUnlockedFloor salta los pisos bloqueados y se detiene en los bordes', () => {
+  it('adjacentOpenFloor salta los pisos bloqueados y se detiene en los bordes', () => {
     const state = emptyState();
-    expect(adjacentUnlockedFloor(state, 0, 1)).toBeNull();
-    expect(adjacentUnlockedFloor(state, 0, -1)).toBeNull();
+    expect(adjacentOpenFloor(state, 0, 1)).toBeNull();
+    expect(adjacentOpenFloor(state, 0, -1)).toBeNull();
 
     state.discovered = [7, 13];
-    expect(adjacentUnlockedFloor(state, 0, 1)).toBe(1);
-    expect(adjacentUnlockedFloor(state, 1, 1)).toBe(2);
-    expect(adjacentUnlockedFloor(state, 2, 1)).toBeNull();
-    expect(adjacentUnlockedFloor(state, 2, -1)).toBe(1);
+    expect(adjacentOpenFloor(state, 0, 1)).toBe(1);
+    expect(adjacentOpenFloor(state, 1, 1)).toBe(2);
+    expect(adjacentOpenFloor(state, 2, 1)).toBeNull();
+    expect(adjacentOpenFloor(state, 2, -1)).toBe(1);
 
     // Con un hueco (solo posible con herramientas de debug), lo salta.
-    state.discovered = [25];
-    expect(adjacentUnlockedFloor(state, 0, 1)).toBe(4);
-    expect(adjacentUnlockedFloor(state, 4, -1)).toBe(0);
+    state.discovered = [19];
+    expect(adjacentOpenFloor(state, 0, 1)).toBe(3);
+    expect(adjacentOpenFloor(state, 3, -1)).toBe(0);
+  });
+
+  it('adjacentOpenFloor no lleva a los pisos cerrados', () => {
+    const state = emptyState();
+    state.discovered = [7, 13, 19, 25]; // Piso 5 abierto: los huevos caen en el 2 y el 1 cierra.
+    expect(adjacentOpenFloor(state, 1, -1)).toBeNull();
+    expect(adjacentOpenFloor(state, 2, -1)).toBe(1);
+  });
+});
+
+describe('pisos cerrados', () => {
+  it('cierran los que quedan por debajo del piso de los huevos', () => {
+    const state = emptyState();
+    state.discovered = [7, 13, 19];
+    expect(isFloorClosed(state, 0)).toBe(false);
+    state.discovered.push(25);
+    expect(isFloorClosed(state, 0)).toBe(true);
+    expect(isFloorClosed(state, 1)).toBe(false);
+  });
+
+  it('abierto es desbloqueado y no cerrado', () => {
+    const state = emptyState();
+    state.discovered = [7, 13, 19, 25];
+    expect(isFloorOpen(state, 0)).toBe(false);
+    expect(isFloorOpen(state, 1)).toBe(true);
+    expect(isFloorOpen(state, 4)).toBe(true);
+    expect(isFloorOpen(state, 5)).toBe(false);
+  });
+
+  it('emptyClosedFloors vacía solo los cerrados y devuelve lo que tenían', () => {
+    const state = emptyState();
+    const creature = addCreature(state, 2);
+    const egg = addEgg(state, 0, 0.3, 0.3);
+    addCreature(state, 8);
+    state.discovered = [7, 13, 19, 25];
+    expect(emptyClosedFloors(state)).toEqual([{ floor: 0, entities: [creature, egg] }]);
+    expect(state.floors[0].entities).toEqual([]);
+    expect(state.floors[1].entities).toHaveLength(1);
+    expect(emptyClosedFloors(state)).toEqual([]);
   });
 });
 
