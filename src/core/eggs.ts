@@ -1,6 +1,6 @@
 import { BALANCE } from '../config/balance.ts';
 import { markDiscovered } from './discovery.ts';
-import { findEntity, findSpawnPosition, isFloorFull } from './field.ts';
+import { eggFloor, findEntity, findSpawnPosition, isFloorFull } from './field.ts';
 import { hatchLevel } from './levels.ts';
 import type { Rng } from './rng.ts';
 import { allocateId } from './state.ts';
@@ -17,17 +17,18 @@ export function spawnEgg(state: GameState, floor: number, rng: Rng): Egg | null 
 }
 
 /**
- * Avanza el temporizador de huevos. Al cumplirse cae un huevo en EGG_FLOOR.
- * Si el piso está lleno, el temporizador queda retenido y el huevo cae apenas haya lugar.
+ * Avanza el temporizador de huevos. Al cumplirse cae un huevo en el piso de los huevos (`eggFloor`).
+ * Si ese piso está lleno, el temporizador queda retenido y el huevo cae apenas haya lugar.
  */
-export function tickEggs(state: GameState, dtMs: number, rng: Rng): Egg | null {
+export function tickEggs(state: GameState, dtMs: number, rng: Rng): { floor: number; egg: Egg } | null {
   const interval = BALANCE.EGG_INTERVAL_MS;
   state.eggTimerMs += dtMs;
   if (state.eggTimerMs < interval) return null;
-  const egg = spawnEgg(state, BALANCE.EGG_FLOOR, rng);
+  const floor = eggFloor(state);
+  const egg = spawnEgg(state, floor, rng);
   // A lo sumo un huevo por tick; el sobrante se conserva, acotado a un intervalo.
   state.eggTimerMs = egg ? Math.min(state.eggTimerMs - interval, interval) : interval;
-  return egg;
+  return egg ? { floor, egg } : null;
 }
 
 export interface HatchResult {

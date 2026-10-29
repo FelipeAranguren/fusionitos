@@ -1,7 +1,7 @@
 import { BALANCE } from '../config/balance.ts';
 import { FLOORS, type CreatureConfig, type FloorConfig } from '../config/creatures.ts';
 
-/** Aritmética de niveles: nivel global n (1..30) ↔ piso (índice 0..) y tier (1..6). */
+/** Aritmética de niveles: nivel global n (1..MAX_LEVEL) ↔ piso (índice 0..) y tier (1..6). */
 
 export const FLOOR_COUNT = FLOORS.length;
 export const MAX_LEVEL = FLOOR_COUNT * BALANCE.CREATURES_PER_FLOOR;

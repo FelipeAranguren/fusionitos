@@ -15,8 +15,8 @@ export const LAYOUT = {
   /** Sobre el borde superior del campo: así no tapa lo que está arriba del campo. */
   bannerY: 300,
   toastY: 1580,
-  /** Pestañas de pisos, al pie. */
-  tabs: { top: 1668, height: 160, marginX: 24, gap: 12, radius: 34 },
+  /** Pestañas de pisos, al pie: se ven `visible` a la vez, con flechas a los costados para correrlas. */
+  tabs: { top: 1668, height: 160, marginX: 16, gap: 10, radius: 34, visible: 5, arrowWidth: 84 },
   /** Última línea: la pista a la izquierda y el botón de reiniciar a la derecha. */
   hintX: 44,
   hintY: 1876,

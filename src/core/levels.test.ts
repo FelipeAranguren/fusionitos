@@ -12,9 +12,9 @@ import {
 } from './levels.ts';
 
 describe('niveles y pisos', () => {
-  it('hay 5 pisos y 30 niveles', () => {
-    expect(FLOOR_COUNT).toBe(5);
-    expect(MAX_LEVEL).toBe(30);
+  it('hay 20 pisos y 120 niveles', () => {
+    expect(FLOOR_COUNT).toBe(20);
+    expect(MAX_LEVEL).toBe(120);
   });
 
   it('convierte nivel global ↔ piso y tier', () => {
@@ -22,6 +22,7 @@ describe('niveles y pisos', () => {
     expect([floorOfLevel(6), tierOfLevel(6)]).toEqual([0, 6]);
     expect([floorOfLevel(7), tierOfLevel(7)]).toEqual([1, 1]);
     expect([floorOfLevel(30), tierOfLevel(30)]).toEqual([4, 6]);
+    expect([floorOfLevel(120), tierOfLevel(120)]).toEqual([19, 6]);
     for (let n = 1; n <= MAX_LEVEL; n++) expect(levelOf(floorOfLevel(n), tierOfLevel(n))).toBe(n);
   });
 
@@ -29,17 +30,19 @@ describe('niveles y pisos', () => {
     expect(mergeResultLevel(1)).toBe(2);
     expect(mergeResultLevel(6)).toBe(7);
     expect([floorOfLevel(7), tierOfLevel(7)]).toEqual([1, 1]);
-    expect(mergeResultLevel(29)).toBe(30);
+    expect(mergeResultLevel(30)).toBe(31);
+    expect(mergeResultLevel(119)).toBe(120);
   });
 
-  it('el nivel 30 es el máximo y no se fusiona', () => {
-    expect(mergeResultLevel(30)).toBeNull();
+  it('el nivel 120 es el máximo y no se fusiona', () => {
+    expect(mergeResultLevel(120)).toBeNull();
   });
 
   it('un huevo da el tier 1 de su piso', () => {
     expect(hatchLevel(0)).toBe(1);
     expect(hatchLevel(1)).toBe(7);
     expect(hatchLevel(4)).toBe(25);
+    expect(hatchLevel(19)).toBe(115);
   });
 
   it('cada piso se abre fusionando el tier 6 del anterior', () => {
@@ -52,9 +55,10 @@ describe('niveles y pisos', () => {
   it('creatureConfig devuelve la criatura del catálogo y rechaza niveles inválidos', () => {
     expect(creatureConfig(1).name).toBe('Oruga');
     expect(creatureConfig(7).name).toBe('Pollito');
-    expect(creatureConfig(30).name).toBe('Sol viviente');
+    expect(creatureConfig(30).name).toBe('Cocodrilo');
+    expect(creatureConfig(120).name).toBe('Supernova');
     expect(() => creatureConfig(0)).toThrow();
-    expect(() => creatureConfig(31)).toThrow();
+    expect(() => creatureConfig(121)).toThrow();
     expect(() => creatureConfig(1.5)).toThrow();
   });
 });

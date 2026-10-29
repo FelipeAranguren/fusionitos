@@ -5,7 +5,9 @@ Juego web *merge idle* de un jugador, para escritorio y celular. Usa Phaser 3.90
 ## Antes de cada cambio
 
 1. **Leé `GAME_DESIGN.md`.** Es la fuente de verdad: reglas, fórmulas, catálogo de criaturas, constantes y fases.
-2. Si el cambio altera reglas, fórmulas, constantes o el catálogo, **actualizá `GAME_DESIGN.md` en el mismo commit**. Si cambia el balance o el catálogo, regenerá la tabla de niveles con `npm run design:tables` y pegala en la sección 7.5.
+2. Si el cambio altera reglas, fórmulas, constantes o el catálogo, **actualizá `GAME_DESIGN.md` en el mismo commit**. Si cambia el balance o el catálogo:
+   - regenerá la tabla de niveles con `npm run design:tables` y pegala en la sección 7.5;
+   - corré `npm run simulate` y actualizá la sección 7.6. El objetivo es que la partida completa dure unas **4 horas**.
 3. Implementá solo la fase que se pidió. Lo marcado como FASE 2 o FASE 3 no se hace hasta que se pida explícitamente.
 
 ## Comandos
@@ -18,6 +20,7 @@ Juego web *merge idle* de un jugador, para escritorio y celular. Usa Phaser 3.90
 | `npm test` | Tests con Vitest (una pasada). `npm run test:watch` para el modo watch. |
 | `npm run typecheck` | Solo chequeo de tipos. |
 | `npm run design:tables` | Imprime la tabla de niveles de `GAME_DESIGN.md`, generada desde el código. |
+| `npm run simulate` | Juega una partida entera con un jugador automático (en ~1 s) e imprime cuándo se abre cada piso y cuánto dura todo. Opciones: `-- --seed N`, `--aps N` (acciones por segundo), `--window N` (niveles que mira al comprar). |
 
 Antes de dar algo por terminado: `npm test` y `npm run build` sin errores.
 
@@ -54,7 +57,8 @@ src/main.ts   arma GameModel + SaveManager + Phaser.Game y conecta el guardado
 - Los valores continuos (monedas, ingreso/s, progreso del huevo, capacidad) el HUD los lee del modelo en `update()`. No se crean eventos para eso.
 - La lógica aplica el cambio al instante; las animaciones son solo visuales y nunca bloquean al modelo.
 - El modelo guarda las posiciones **normalizadas** (0..1 dentro del campo). La conversión a píxeles se hace solo en `src/view/fieldSpace.ts`.
-- Las criaturas se dibujan por clave de textura (`creature-{n}`). `BootScene` genera esas texturas desde el emoji o carga `image` si está definida.
+- Las criaturas se dibujan por clave de textura. `BootScene` carga las `image` del catálogo y genera las texturas fijas (huevo, íconos, moneda). Las de criaturas y decoración se generan desde el emoji la primera vez que se usan: pedí la clave con `ensureCreatureTexture(scene, n)` o `ensureDecorTexture(scene, emoji)` (`src/view/textures.ts`), nunca armándola a mano.
+- **Barra de pestañas:** 5 `FloorTab` fijas que muestran pisos según una ventana (`src/view/tabWindow.ts`, puro y testeado), más dos `TabArrow`. `UIScene` recalcula la ventana cuando cambia el piso que se ve o el de los huevos.
 - **Piso que se ve:**
   - Es estado de la vista (`ctx.view.floor`), no del juego, así que no se guarda.
   - Para cambiarlo, se emite `ui.emit('selectFloor', { floor })`. `GameScene` valida que esté desbloqueado y se reinicia con `scene.restart({ floor })`.
@@ -83,7 +87,7 @@ src/main.ts   arma GameModel + SaveManager + Phaser.Game y conecta el guardado
 
 - Toda lógica nueva o modificada en `src/core` lleva su test al lado (`algo.test.ts`), con Vitest en entorno Node.
 - El azar se inyecta (`Rng`). En los tests se usa `mulberry32(semilla)` para que sean deterministas.
-- No hay tests de las escenas Phaser. Se verifican a mano o con Playwright (ver abajo).
+- No hay tests de las escenas Phaser. Se verifican a mano o con Playwright (ver abajo). La lógica de vista que no necesita Phaser va en un módulo aparte con su test (como `src/view/tabWindow.ts`).
 
 ## Guardado
 
@@ -99,12 +103,12 @@ src/main.ts   arma GameModel + SaveManager + Phaser.Game y conecta el guardado
 
 - En desarrollo existe `window.__debug` (no se incluye en el build), con:
   - `model` y `game`;
-  - `spawnEgg()` y `spawnCreature(level)` (aparece en el piso de su nivel y lo desbloquea);
+  - `spawnEgg()` (en el piso de los huevos) y `spawnCreature(level)` (aparece en el piso de su nivel y lo desbloquea; para simular una partida avanzada, creá el tier 1 de cada piso en orden);
   - `addCoins(n)` y `simulateAway(ms)` (ingreso offline y bienvenida, como al volver a la pestaña);
   - `audio()`: estado del audio (`locked` hasta el primer gesto), música y efectos prendidos, y los últimos sonidos que sonaron;
   - `selectFloor(floor)` y `currentFloor()` (pisos desde 0);
   - `entities()` (las del piso que se ve), con posiciones en píxeles de la página;
-  - `buttons()`: los botones visibles, con posiciones en píxeles de la página. Se llaman `shop`, `shop:close`, `buy:N`, `reset`, `tab:N`, `toggle:sfx`, `toggle:music`; los de los popups, por su texto;
+  - `buttons()`: los botones visibles, con posiciones en píxeles de la página. Se llaman `shop`, `shop:close`, `buy:N`, `reset`, `tab:N` (solo las 5 pestañas a la vista), `tabs:prev`, `tabs:next`, `eggs:go` (el atajo al piso de los huevos), `toggle:sfx`, `toggle:music`; los de los popups, por su texto;
   - `toPage(x, y)` y `clearSave()`.
 - Con el MCP de Playwright (`.mcp.json`): `npm run dev` y abrir http://localhost:5173.
   - Para arrastrar sobre el canvas, usá `page.mouse` (down / move con pasos / up) con las coordenadas de `__debug.entities()`.

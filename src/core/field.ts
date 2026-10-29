@@ -16,6 +16,19 @@ export function isFloorUnlocked(state: DeepReadonly<GameState>, floor: number): 
   return floor === 0 || state.discovered.includes(hatchLevel(floor));
 }
 
+/** Índice del piso desbloqueado más alto. */
+export function highestUnlockedFloor(state: DeepReadonly<GameState>): number {
+  for (let floor = state.floors.length - 1; floor > 0; floor--) {
+    if (isFloorUnlocked(state, floor)) return floor;
+  }
+  return 0;
+}
+
+/** Piso donde caen los huevos: EGG_FLOOR_LAG por debajo del más alto desbloqueado (mínimo, el primero). */
+export function eggFloor(state: DeepReadonly<GameState>): number {
+  return Math.max(0, highestUnlockedFloor(state) - BALANCE.EGG_FLOOR_LAG);
+}
+
 /** Próximo piso desbloqueado hacia arriba (1) o hacia abajo (−1), o null si no hay. */
 export function adjacentUnlockedFloor(state: DeepReadonly<GameState>, floor: number, direction: 1 | -1): number | null {
   for (let candidate = floor + direction; candidate >= 0 && candidate < state.floors.length; candidate += direction) {

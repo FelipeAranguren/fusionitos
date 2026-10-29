@@ -9,6 +9,7 @@ import {
   serializeSave,
   type StorageLike,
 } from './save.ts';
+import { MAX_LEVEL } from './levels.ts';
 import { addCreature, addEgg, emptyState } from './test-helpers.ts';
 
 class MemoryStorage implements StorageLike {
@@ -85,14 +86,14 @@ describe('parseSave', () => {
         coins: -5,
         eggTimerMs: 99_999,
         nextId: 2,
-        discovered: [1, 99, 'x'],
+        discovered: [1, 199, 'x'],
         floors: [
           {
             entities: [
               { kind: 'creature', id: 5, level: 2, x: 2, y: -1, payoutMs: 100 }, // se acota a 0..1
               { kind: 'creature', id: 5, level: 1, x: 0.5, y: 0.5, payoutMs: 0 }, // id repetido
               { kind: 'creature', id: 6, level: 7, x: 0.5, y: 0.5, payoutMs: 0 }, // nivel de otro piso
-              { kind: 'creature', id: 9, level: 31, x: 0.5, y: 0.5, payoutMs: 0 }, // nivel inexistente
+              { kind: 'creature', id: 9, level: 121, x: 0.5, y: 0.5, payoutMs: 0 }, // nivel inexistente
               { kind: 'dragon', id: 7, x: 0, y: 0 }, // tipo desconocido
               { kind: 'egg', id: 8, x: 0.1, y: Number.NaN }, // posición inválida (NaN → null en JSON)
               { kind: 'egg', id: 10, x: 0.1, y: 0.2 },
@@ -107,12 +108,12 @@ describe('parseSave', () => {
     const { state } = parsed;
     expect(state.coins).toBe(0);
     expect(state.eggTimerMs).toBe(BALANCE.EGG_INTERVAL_MS);
-    expect(state.floors).toHaveLength(5);
+    expect(state.floors).toHaveLength(20);
     expect(state.floors[0].entities).toEqual([
       { kind: 'creature', id: 5, level: 2, x: 1, y: 0, payoutMs: 100 },
       { kind: 'egg', id: 10, x: 0.1, y: 0.2 },
     ]);
-    expect(state.discovered).toEqual([1, 2]); // 99 y 'x' fuera; 2 sumado por coherencia
+    expect(state.discovered).toEqual([1, 2]); // 199 y 'x' fuera; 2 sumado por coherencia
     expect(state.nextId).toBe(11);
   });
 
@@ -129,13 +130,26 @@ describe('parseSave', () => {
     expect(parsed.savedAt).toBe(5);
     expect(parsed.state).toMatchObject({ coins: 99, eggTimerMs: 100, nextId: 3, discovered: [1, 2] });
     expect(parsed.state.floors[0].entities).toEqual([creature]);
-    expect(parsed.state.purchases).toEqual(Array(30).fill(0));
+    expect(parsed.state.purchases).toEqual(Array(MAX_LEVEL).fill(0));
+  });
+
+  it('un guardado de cuando había 5 pisos carga en el juego de 20', () => {
+    const creature = { kind: 'creature', id: 1, level: 27, x: 0.5, y: 0.5, payoutMs: 0 };
+    const old = { version: SAVE_VERSION, savedAt: 0, state: { floors: [{ entities: [] }, {}, {}, {}, { entities: [creature] }], purchases: Array(30).fill(2) } };
+    const parsed = parseSave(JSON.stringify(old));
+    expect(parsed.status).toBe('ok');
+    if (parsed.status !== 'ok') return;
+    expect(parsed.state.floors).toHaveLength(20);
+    expect(parsed.state.floors[4].entities).toEqual([creature]);
+    expect(parsed.state.purchases).toHaveLength(MAX_LEVEL);
+    expect(parsed.state.purchases.slice(28, 32)).toEqual([2, 2, 0, 0]);
   });
 
   it('sanea las compras: enteros positivos, una por nivel', () => {
     const purchases = [3, -1, 1.5, 'x', null, 2, ...Array(40).fill(1)];
     const parsed = parseSave(JSON.stringify({ version: SAVE_VERSION, savedAt: 0, state: { purchases } }));
-    expect(parsed.status === 'ok' && parsed.state.purchases).toEqual([3, 0, 0, 0, 0, 2, ...Array(24).fill(1)]);
+    const expected = [3, 0, 0, 0, 0, 2, ...Array(40).fill(1), ...Array(MAX_LEVEL - 46).fill(0)];
+    expect(parsed.status === 'ok' && parsed.state.purchases).toEqual(expected);
   });
 
   it('nunca carga más entidades que la capacidad del piso', () => {

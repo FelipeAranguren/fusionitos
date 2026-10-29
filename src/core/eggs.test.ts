@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../config/balance.ts';
 import { hatchEgg, spawnEgg, tickEggs } from './eggs.ts';
+import { eggFloor } from './field.ts';
+import { hatchLevel } from './levels.ts';
 import { mulberry32 } from './rng.ts';
 import { createInitialState } from './state.ts';
 import { addCreature, addEgg, emptyState, fillWithCreatures } from './test-helpers.ts';
@@ -10,9 +12,9 @@ describe('caída de huevos', () => {
     const state = emptyState();
     const rng = mulberry32(1);
     expect(tickEggs(state, 4999, rng)).toBeNull();
-    const egg = tickEggs(state, 1, rng);
-    expect(egg).toMatchObject({ kind: 'egg' });
-    expect(state.floors[0].entities).toEqual([egg]);
+    const spawned = tickEggs(state, 1, rng);
+    expect(spawned).toMatchObject({ floor: 0, egg: { kind: 'egg' } });
+    expect(state.floors[0].entities).toEqual([spawned?.egg]);
     expect(state.eggTimerMs).toBe(0);
     for (let i = 0; i < 5; i++) tickEggs(state, 1000, rng);
     expect(state.floors[0].entities).toHaveLength(2);
@@ -66,6 +68,55 @@ describe('caída de huevos', () => {
     const egg = spawnEgg(state, 0, mulberry32(5));
     const nearest = Math.min(Math.hypot((egg?.x ?? 0) - 0.1, (egg?.y ?? 0) - 0.1), Math.hypot((egg?.x ?? 0) - 0.9, (egg?.y ?? 0) - 0.9));
     expect(nearest).toBeGreaterThan(0.3);
+  });
+});
+
+describe('piso de los huevos (3 por debajo del más alto desbloqueado)', () => {
+  /** Desbloquea hasta el piso `floor` (índice): se descubre su tier 1. */
+  const unlockUpTo = (state: ReturnType<typeof emptyState>, floor: number) => {
+    for (let f = 1; f <= floor; f++) state.discovered.push(hatchLevel(f));
+  };
+
+  it('hasta el Piso 4 caen en el Piso 1', () => {
+    const state = emptyState();
+    expect(eggFloor(state)).toBe(0);
+    unlockUpTo(state, 3);
+    expect(eggFloor(state)).toBe(0);
+  });
+
+  it('con el Piso 5 desbloqueado caen en el Piso 2; con el 10, en el 7', () => {
+    const state = emptyState();
+    unlockUpTo(state, 4);
+    expect(eggFloor(state)).toBe(1);
+    unlockUpTo(state, 9);
+    expect(eggFloor(state)).toBe(6);
+  });
+
+  it('el huevo cae en ese piso y de él sale el tier 1 de ese piso', () => {
+    const state = emptyState();
+    unlockUpTo(state, 4);
+    const spawned = tickEggs(state, 5000, mulberry32(8));
+    expect(spawned?.floor).toBe(1);
+    expect(state.floors[1].entities).toEqual([spawned?.egg]);
+    expect(state.floors[0].entities).toHaveLength(0);
+    const hatched = hatchEgg(state, spawned?.egg.id ?? -1);
+    expect(hatched?.creature.level).toBe(7); // Pollito
+  });
+
+  it('si ese piso está lleno, se espera: no caen en otro', () => {
+    const state = emptyState();
+    unlockUpTo(state, 4);
+    fillWithCreatures(state, 7, BALANCE.FLOOR_CAPACITY);
+    expect(tickEggs(state, 60_000, mulberry32(9))).toBeNull();
+    expect(state.floors[0].entities).toHaveLength(0);
+    expect(state.eggTimerMs).toBe(BALANCE.EGG_INTERVAL_MS);
+  });
+
+  it('un huevo viejo de un piso de abajo da el tier 1 de su piso', () => {
+    const state = emptyState();
+    const oldEgg = addEgg(state, 0);
+    unlockUpTo(state, 9);
+    expect(hatchEgg(state, oldEgg.id)?.creature.level).toBe(1);
   });
 });
 

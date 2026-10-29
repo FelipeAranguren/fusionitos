@@ -111,11 +111,12 @@ describe('GameModel', () => {
     const added = vi.fn();
     model.events.on('creatureAdded', added);
 
+    const price = BALANCE.SHOP_BASE_PRICE * BALANCE.SHOP_PRICE_GROWTH ** 7;
     expect(model.maxBuyableLevel).toBe(8);
     expect(model.buy(8).ok).toBe(true);
     expect(added).toHaveBeenCalledWith({ floor: 1, creature: expect.objectContaining({ level: 8 }) });
-    expect(model.coins).toBe(1e6 - 15 * 3 ** 7);
-    expect(model.priceOf(8)).toBeCloseTo(15 * 3 ** 7 * 1.15);
+    expect(model.coins).toBeCloseTo(1e6 - price);
+    expect(model.priceOf(8)).toBeCloseTo(price * BALANCE.SHOP_PURCHASE_GROWTH);
   });
 
   it('una compra rechazada no emite nada', () => {
@@ -147,6 +148,6 @@ describe('GameModel', () => {
     for (let i = 0; i < BALANCE.FLOOR_CAPACITY; i++) model.debugAddCreature(1);
     expect(model.floorCount(0)).toBe(BALANCE.FLOOR_CAPACITY);
     expect(model.debugAddCreature(1)).toBeNull();
-    expect(model.debugAddCreature(31)).toBeNull();
+    expect(model.debugAddCreature(121)).toBeNull();
   });
 });

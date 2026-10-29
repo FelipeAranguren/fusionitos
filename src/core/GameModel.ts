@@ -6,6 +6,8 @@ import { Emitter } from './emitter.ts';
 import {
   adjacentUnlockedFloor,
   clamp01,
+  eggFloor,
+  highestUnlockedFloor,
   findEntity,
   findSpawnPosition,
   floorEntityCount,
@@ -79,6 +81,15 @@ export class GameModel {
     return maxDiscoveredLevel(this.current);
   }
 
+  /** Piso donde caen los huevos ahora. */
+  get eggFloor(): number {
+    return eggFloor(this.current);
+  }
+
+  get highestUnlockedFloor(): number {
+    return highestUnlockedFloor(this.current);
+  }
+
   floorCount(floor: number): number {
     return floorEntityCount(this.current, floor);
   }
@@ -103,8 +114,8 @@ export class GameModel {
   tick(dtMs: number): void {
     const dt = Math.min(Math.max(dtMs, 0), BALANCE.MAX_TICK_MS);
     if (dt === 0) return;
-    const egg = tickEggs(this.current, dt, this.rng);
-    if (egg) this.events.emit('eggSpawned', { floor: BALANCE.EGG_FLOOR, egg });
+    const spawned = tickEggs(this.current, dt, this.rng);
+    if (spawned) this.events.emit('eggSpawned', spawned);
     for (const pop of tickIncome(this.current, dt)) this.events.emit('coinsPopped', pop);
   }
 
@@ -174,7 +185,7 @@ export class GameModel {
   // --- Ayudas de desarrollo (las expone el hook de debug, solo en dev) ---
 
   /** Hace caer un huevo ya mismo, sin esperar el temporizador. */
-  debugSpawnEgg(floor: number = BALANCE.EGG_FLOOR): Egg | null {
+  debugSpawnEgg(floor: number = eggFloor(this.current)): Egg | null {
     const egg = spawnEgg(this.current, floor, this.rng);
     if (egg) this.events.emit('eggSpawned', { floor, egg });
     return egg;

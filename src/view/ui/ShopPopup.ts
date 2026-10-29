@@ -6,7 +6,7 @@ import { incomePerSecond } from '../../core/economy.ts';
 import { formatNumber } from '../../core/format.ts';
 import type { GameModel } from '../../core/GameModel.ts';
 import { creatureConfig, floorConfig, levelOf } from '../../core/levels.ts';
-import { TEXTURES, creatureTextureKey } from '../textures.ts';
+import { TEXTURES, ensureCreatureTexture } from '../textures.ts';
 import { Button } from './Button.ts';
 import { Modal } from './Modal.ts';
 import { textStyle } from './textStyle.ts';
@@ -106,7 +106,7 @@ class ShopRow {
     this.onPurchased = onPurchased;
     const background = scene.add.graphics();
     background.fillStyle(COLORS.cardRow, 1).fillRoundedRect(-ROW.width / 2, y - ROW.height / 2, ROW.width, ROW.height, 32);
-    this.icon = scene.add.image(-340, y, creatureTextureKey(level)).setDisplaySize(120, 120);
+    this.icon = scene.add.image(-340, y, ensureCreatureTexture(scene, level)).setDisplaySize(120, 120);
     this.iconScale = this.icon.scaleX;
     this.name = scene.add.text(-260, y - 22, '', dark(40, 700)).setOrigin(0, 0.5);
     this.detail = scene.add.text(-260, y + 26, '', dark(30, 500, COLORS.textMuted)).setOrigin(0, 0.5);

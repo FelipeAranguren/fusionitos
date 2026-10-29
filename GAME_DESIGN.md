@@ -7,7 +7,7 @@
 
 Juego web *merge idle* de un solo jugador, inspirado en el género de Cow Evolution / Evolution Galaxy, con una temática propia.
 Caen huevos, nacen criaturas, y al juntar dos iguales evolucionan a la siguiente. Cada criatura genera monedas sola.
-El objetivo es descubrir las 30 criaturas, subiendo de piso en piso.
+El objetivo es descubrir las 120 criaturas, subiendo de piso en piso por los 20 pisos. Terminar lleva unas 4 horas de juego seguido (§7.6).
 
 - **Plataforma:** navegador, en escritorio y celular. Se juega con mouse o con el dedo.
 - **Stack:** Phaser 3 (3.90) + TypeScript + Vite. Tests con Vitest. Sin backend: el progreso se guarda en `localStorage`.
@@ -18,12 +18,13 @@ El objetivo es descubrir las 30 criaturas, subiendo de piso en piso.
 
 | Término | Definición |
 |---|---|
-| **Piso** | Un mundo con su propio campo, color de fondo y 6 criaturas. Hay 5 pisos (índice interno 0–4; se muestran como "Piso 1–5"). |
-| **Nivel global `n`** | Identifica a cada criatura de 1 a 30, contando todos los pisos. |
+| **Piso** | Un mundo con su propio campo, color de fondo y 6 criaturas. Hay 20 pisos (índice interno 0–19; se muestran como "Piso 1–20"). |
+| **Nivel global `n`** | Identifica a cada criatura de 1 a 120, contando todos los pisos. |
 | **Tier** | Posición de la criatura dentro de su piso (1–6). `piso = ⌊(n−1)/6⌋`, `tier = (n−1) mod 6 + 1`. |
 | **Campo** | El área donde caen los huevos y deambulan las criaturas de un piso. |
 | **Capacidad** | Máximo de entidades (criaturas + huevos) en un piso: **12**. |
 | **Entidad** | Una criatura o un huevo dentro de un campo. |
+| **Piso de los huevos** | Donde caen los huevos: 3 pisos por debajo del piso más alto desbloqueado (como mínimo, el piso 1). Ver §4. |
 
 **Regla clave:** fusionar dos criaturas de nivel `n` da la de nivel `n+1`.
 Por eso dos criaturas de tier 6 dan automáticamente el tier 1 del piso siguiente (6+6 → 7, 12+12 → 13, etc.).
@@ -36,23 +37,47 @@ Todo el catálogo vive en `src/config/creatures.ts`. Cada criatura es `{ name, e
 |---|---|---|---|---|---|---|---|---|
 | 1 Jardín | verde claro | 🌼 🌱 🍀 | 🐛 Oruga | 🐌 Caracol | 🐜 Hormiga | 🐞 Vaquita | 🐝 Abeja | 🦋 Mariposa |
 | 2 Granja | trigo | 🌾 🌻 | 🐣 Pollito | 🐓 Gallo | 🐇 Conejo | 🐖 Chancho | 🐑 Oveja | 🐄 Vaca |
-| 3 Bosque | verde oscuro | 🌲 🍄 🍂 | 🦔 Erizo | 🐿️ Ardilla | 🦉 Búho | 🦡 Tejón | 🦌 Ciervo | 🐻 Oso |
-| 4 Océano | azul | 🐚 🌿 | 🐠 Pez | 🦀 Cangrejo | 🐙 Pulpo | 🐬 Delfín | 🦈 Tiburón | 🐋 Ballena |
-| 5 Galaxia | violeta | ⭐ ✨ 🌙 | 👾 Bichito cósmico | 👽 Alien | 🦄 Unicornio | 🐲 Dragoncito | 🐉 Dragón | 🌞 Sol viviente |
+| 3 Bosque | verde | 🌲 🍄 🍂 | 🦔 Erizo | 🐿️ Ardilla | 🦉 Búho | 🦡 Tejón | 🦌 Ciervo | 🐻 Oso |
+| 4 Océano | azul | ⚓ 🌿 | 🐠 Pez | 🦀 Cangrejo | 🐙 Pulpo | 🐬 Delfín | 🦈 Tiburón | 🐋 Ballena |
+| 5 Pantano | verde musgo | 🍃 💧 | 🦟 Mosquito | 🐸 Rana | 🦎 Lagartija | 🐢 Tortuga | 🦛 Hipopótamo | 🐊 Cocodrilo |
+| 6 Ciudad | gris | 🧱 🚲 | 🐀 Rata | 🐦 Gorrión | 🦝 Mapache | 🐈 Gato | 🐕 Perro | 🐩 Caniche |
+| 7 Lago | turquesa | 🪨 💧 | 🐟 Trucha | 🦆 Pato | 🦦 Nutria | 🦫 Castor | 🦢 Cisne | 🦩 Flamenco |
+| 8 Pradera | verde lima | 🌾 🌷 | 🐁 Ratón | 🐹 Hámster | 🦃 Pavo | 🐗 Jabalí | 🐃 Búfalo | 🐎 Mustang |
+| 9 Desierto | arena | 🌵 🪨 | 🪲 Escarabajo | 🦂 Escorpión | 🐍 Serpiente | 🦊 Fénec | 🐪 Dromedario | 🐫 Camello |
+| 10 Sabana | ocre | 🌳 🍂 | 🦓 Cebra | 🦒 Jirafa | 🐆 Leopardo | 🦏 Rinoceronte | 🐘 Elefante | 🦁 León |
+| 11 Selva | verde selva | 🌴 🌺 | 🦜 Loro | 🐒 Mono | 🦥 Perezoso | 🐅 Tigre | 🦧 Orangután | 🦍 Gorila |
+| 12 Montaña | gris azulado | 🪨 🌲 ❄️ | 🐐 Cabra | 🐏 Carnero | 🦙 Llama | 🐂 Yak | 🦬 Bisonte | 🦅 Cóndor |
+| 13 Polo | celeste hielo | ❄️ 🧊 | 🐧 Pingüino | 🦭 Foca | 🐺 Lobo ártico | 🐳 Orca | ☃️ Muñeco de nieve | 🦣 Mamut |
+| 14 Noche | azul noche | ⭐ ✨ | 🦗 Grillo | 🕷️ Araña | 🦨 Zorrillo | 🦇 Murciélago | 🌚 Luna nueva | 🌝 Luna llena |
+| 15 Prehistoria | tierra | 🦴 🪨 | 🪱 Lombriz | 🦐 Trilobite | 🐚 Amonite | 🦤 Dodo | 🦕 Saurópodo | 🦖 Tiranosaurio |
+| 16 Abismo | azul profundo | 💎 🌿 | 🦪 Ostra | 🐡 Pez globo | 🦞 Langosta | 🦑 Calamar gigante | 🧜 Sirena | 🐉 Leviatán |
+| 17 Mansión | violeta grisáceo | 🕸️ 🕯️ | 🎃 Calabaza | 👻 Fantasma | 💀 Calavera | 🧟 Zombi | 🧛 Vampiro | 🧙 Bruja |
+| 18 Reino mágico | rosa | ✨ 🍄 🌈 | 🧚 Hada | 🧝 Elfo | 👹 Ogro | 🧞 Genio | 🦄 Unicornio | 🐲 Dragón |
+| 19 Juguetería | amarillo | 🎈 🧩 | 🧸 Osito | 🐴 Caballito | 🪆 Matrioska | 🤡 Payaso | 👾 Pixelito | 🤖 Robot |
+| 20 Galaxia | violeta | 💫 ✨ 🌙 | 👽 Alien | 🛸 Platillo volador | ☄️ Cometa | 🪐 Planeta viviente | 🌞 Sol viviente | 🌟 Supernova |
 
-- Los emojis son de Unicode ≤ 11, para que se vean en Windows, Android e iOS.
-- Los colores exactos (fondo y acento) están en `creatures.ts`.
-- **Nivel máximo:** 30 (🌞 Sol viviente). Dos 🌞 no se fusionan.
+- Ninguna temática se repite y ningún emoji aparece dos veces (ni como criatura ni entre la decoración y las criaturas). Lo verifica `creatures.test.ts`.
+- **Compatibilidad de emojis:** la mayoría es de Unicode ≤ 11. 🪱 🦤 🪲 🦫 🦬 🦣 🦭 🪆 y la 🪨 de decoración son de Emoji 13 (2020): se ven en Windows 11, Android 11+, iOS 14.2+ y macOS 11+. En Windows 10 pueden aparecer como un cuadrado; si molesta, se reemplazan con `image`.
+- Los colores exactos (fondo, acento y página) están en `creatures.ts`. En los fondos oscuros (Noche, Abismo, Mansión, Galaxia) la decoración es más opaca (`decorAlpha`).
+- **Texturas:** las de criaturas y decoración se generan la primera vez que se muestran, no todas al arrancar (son 120 a 256 px).
+- **Nivel máximo:** 120 (🌟 Supernova). Dos 🌟 no se fusionan.
 
-## 4. Huevos — FASE 1
+## 4. Huevos — FASE 1 (piso móvil desde los 20 pisos)
 
-- Cada **5 s** cae un huevo 🥚 en un lugar al azar del campo del **piso 1**. Los pisos superiores nunca reciben huevos: se alimentan con merges y, en F3, con compras.
+- Cada **5 s** cae un huevo 🥚 en un lugar al azar del campo del **piso de los huevos**. Los demás pisos se alimentan con merges y compras.
+- **Piso de los huevos** = piso más alto desbloqueado − `EGG_FLOOR_LAG` (3), como mínimo el piso 1. A medida que se abren pisos, los huevos suben:
+
+  | Piso más alto abierto | 1 a 4 | 5 | 6 | … | 10 | … | 20 |
+  |---|---|---|---|---|---|---|---|
+  | Los huevos caen en | Piso 1 | Piso 2 | Piso 3 | … | Piso 7 | … | Piso 17 |
+
+- **Cuando sube:** aparece el aviso "🥚 ¡Ahora los huevos caen en el Piso N: nombre!" y la pestaña de ese piso salta. Los huevos que quedaron en el piso anterior se quedan ahí y se pueden abrir igual.
 - En una partida nueva, el primer huevo cae a **1 s**, para que el campo no arranque vacío.
 - **Dónde cae:** se sortean 12 posiciones candidatas y se elige la más alejada de las entidades existentes, para que no se amontonen.
 - **Animación de caída:** el huevo cae desde arriba con rebote y su sombra crece al acercarse al suelo. En reposo se balancea, invitando a tocarlo.
-- **Abrir:** al tocarlo o hacer clic, se sacude, se rompe con partículas y sale la criatura de **tier 1 de ese piso** (`n = piso×6 + 1`), en la misma posición.
+- **Abrir:** al tocarlo o hacer clic, se sacude, se rompe con partículas y sale la criatura de **tier 1 del piso donde está el huevo** (`n = piso×6 + 1`), en la misma posición. Un huevo del Piso 7 da una 🐟 Trucha.
 - Los huevos **no se arrastran** y no generan monedas.
-- **Campo lleno** (12 entidades contando huevos):
+- **Campo lleno** (12 entidades contando huevos, en el piso de los huevos):
   - No caen huevos.
   - Se muestra el banner "¡Campo lleno!" y el contador de capacidad "12/12".
   - El temporizador queda **retenido** con el huevo "listo", y cae apenas se libera un lugar.
@@ -68,7 +93,7 @@ Todo el catálogo vive en `src/config/creatures.ts`. Cada criatura es `{ name, e
   - La nueva criatura aparece en el **piso de arriba**, en un lugar libre al azar, y **desbloquea** ese piso si estaba bloqueado.
   - Si ese piso está **lleno**, el merge se **rechaza**: la criatura queda donde la soltaste y se avisa "El Piso X está lleno".
   - Si el piso se desbloquea, aparece el aviso "¡Piso X desbloqueado!" y su pestaña late. La criatura nueva suma ingreso al instante, aunque no se esté viendo ese piso.
-- **Nivel 30:** no se fusiona; se avisa "¡Nivel máximo!".
+- **Nivel 120:** no se fusiona; se avisa "¡Nivel máximo!".
 - **Monedas pendientes:** al fusionar, lo que las dos criaturas tenían acumulado para su próximo pulso se cobra en el momento, así que no se pierde nada.
 
 ## 6. Descubrimiento — FASE 1
@@ -98,7 +123,7 @@ Se usa punto decimal y se **trunca** (nunca se muestra más de lo que hay).
 
 - **Menos de 100 en su escala:** un decimal (`7.5`, `1.2K`, `56.3M`).
 - **Desde 100:** sin decimales (`244`, `123K`).
-- **Sufijos:** K, M, B, T, Qa, Qi, Sx, Sp, Oc, No, Dc. Más allá, notación científica (`1.00e36`).
+- **Sufijos:** K, M, B, T, Qa, Qi, Sx, Sp, Oc, No, Dc, Ud, Dd, Td, Qad, Qid, Sxd, Spd, Ocd, Nod, Vg (10³ a 10⁶³). Los precios más altos rondan los 10⁵⁰ (Qid). Desde 10⁶⁶, notación científica (`1.00e66`).
 - **Contador de monedas:** muestra la parte entera.
 
 Ejemplos: 999 → `999` · 1000 → `1K` · 1234 → `1.2K` · 3 456 789 → `3.4M` · 5.6×10⁹ → `5.6B`.
@@ -107,12 +132,13 @@ Ejemplos: 999 → `999` · 1000 → `1K` · 1234 → `1.2K` · 3 456 789 → `3.
 
 ```
 precio(n, k) = SHOP_BASE_PRICE × SHOP_PRICE_GROWTH^(n−1) × SHOP_PURCHASE_GROWTH^k
-             = 15 × 3^(n−1) × 1.15^k        (k = compras previas de esa criatura)
+             = 70 × 2.54^(n−1) × 1.15^k        (k = compras previas de esa criatura)
 ```
 
 - Solo se pueden comprar criaturas hasta **2 niveles por debajo** de la máxima descubierta (`n ≤ maxDescubierto − 2`).
 - La criatura comprada aparece en el campo de **su** piso, en un lugar libre y con un "pop". Respeta la capacidad.
-- **Repago** de la primera compra: `precio/ingreso = 15 × 1.2^(n−1)` segundos (de 15 s en n=1 a ~34 min en n=28, el máximo comprable).
+- **Repago** de la primera compra: `precio/ingreso = 70 × 1.016^(n−1)` segundos (de 1.2 min en n=1 a ~7.5 min en n=118, el máximo comprable).
+- **Por qué esos valores:** el precio tiene que crecer apenas más rápido que el ingreso (2.54 contra 2.5). Con 3, como había con 5 pisos, el repago crecía 20 % por nivel: desde el piso 6 la tienda ya no servía y la partida no terminaba (el simulador no pasaba del piso 8 en 48 h). Lo verifica `shop.test.ts`: `1 < SHOP_PRICE_GROWTH / INCOME_GROWTH < 1.05`. Con estos valores se termina en unas 4 h (§7.6).
 - **Interfaz:** el botón **🛒 Tienda** del HUD abre la tienda **del piso que se ve**, con una fila por cada criatura de ese piso:
   - **sin descubrir:** silueta, "???" y 🔒 (no arruina la sorpresa);
   - **descubierta pero todavía no a la venta:** aparece apagada, con "🔒 Descubrí N más";
@@ -139,49 +165,185 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
 
 | n | Piso · tier | Criatura | Ingreso/s | Pulso (cada 3 s) | Precio base F3 | Repago F3 |
 |---:|---|---|---:|---:|---:|---:|
-| 1 | 1 Jardín · 1 | 🐛 Oruga | 1 | +3 | 15 | 15 s |
-| 2 | 1 Jardín · 2 | 🐌 Caracol | 2.5 | +7.5 | 45 | 18 s |
-| 3 | 1 Jardín · 3 | 🐜 Hormiga | 6.2 | +18.7 | 135 | 22 s |
-| 4 | 1 Jardín · 4 | 🐞 Vaquita | 15.6 | +46.8 | 405 | 26 s |
-| 5 | 1 Jardín · 5 | 🐝 Abeja | 39 | +117 | 1.2K | 31 s |
-| 6 | 1 Jardín · 6 | 🦋 Mariposa | 97.6 | +292 | 3.6K | 37 s |
-| 7 | 2 Granja · 1 | 🐣 Pollito | 244 | +732 | 10.9K | 45 s |
-| 8 | 2 Granja · 2 | 🐓 Gallo | 610 | +1.8K | 32.8K | 54 s |
-| 9 | 2 Granja · 3 | 🐇 Conejo | 1.5K | +4.5K | 98.4K | 1.1 min |
-| 10 | 2 Granja · 4 | 🐖 Chancho | 3.8K | +11.4K | 295K | 1.3 min |
-| 11 | 2 Granja · 5 | 🐑 Oveja | 9.5K | +28.6K | 885K | 1.5 min |
-| 12 | 2 Granja · 6 | 🐄 Vaca | 23.8K | +71.5K | 2.6M | 1.9 min |
-| 13 | 3 Bosque · 1 | 🦔 Erizo | 59.6K | +178K | 7.9M | 2.2 min |
-| 14 | 3 Bosque · 2 | 🐿️ Ardilla | 149K | +447K | 23.9M | 2.7 min |
-| 15 | 3 Bosque · 3 | 🦉 Búho | 372K | +1.1M | 71.7M | 3.2 min |
-| 16 | 3 Bosque · 4 | 🦡 Tejón | 931K | +2.7M | 215M | 3.9 min |
-| 17 | 3 Bosque · 5 | 🦌 Ciervo | 2.3M | +6.9M | 645M | 4.6 min |
-| 18 | 3 Bosque · 6 | 🐻 Oso | 5.8M | +17.4M | 1.9B | 5.5 min |
-| 19 | 4 Océano · 1 | 🐠 Pez | 14.5M | +43.6M | 5.8B | 6.7 min |
-| 20 | 4 Océano · 2 | 🦀 Cangrejo | 36.3M | +109M | 17.4B | 8.0 min |
-| 21 | 4 Océano · 3 | 🐙 Pulpo | 90.9M | +272M | 52.3B | 9.6 min |
-| 22 | 4 Océano · 4 | 🐬 Delfín | 227M | +682M | 156B | 11.5 min |
-| 23 | 4 Océano · 5 | 🦈 Tiburón | 568M | +1.7B | 470B | 13.8 min |
-| 24 | 4 Océano · 6 | 🐋 Ballena | 1.4B | +4.2B | 1.4T | 16.6 min |
-| 25 | 5 Galaxia · 1 | 👾 Bichito cósmico | 3.5B | +10.6B | 4.2T | 19.9 min |
-| 26 | 5 Galaxia · 2 | 👽 Alien | 8.8B | +26.6B | 12.7T | 23.8 min |
-| 27 | 5 Galaxia · 3 | 🦄 Unicornio | 22.2B | +66.6B | 38.1T | 28.6 min |
-| 28 | 5 Galaxia · 4 | 🐲 Dragoncito | 55.5B | +166B | 114T | 34.3 min |
-| 29 | 5 Galaxia · 5 | 🐉 Dragón | 138B | +416B | 343T | 41.2 min |
-| 30 | 5 Galaxia · 6 | 🌞 Sol viviente | 346B | +1T | 1Qa | 49.5 min |
+| 1 | 1 Jardín · 1 | 🐛 Oruga | 1 | +3 | 70 | 1.2 min |
+| 2 | 1 Jardín · 2 | 🐌 Caracol | 2.5 | +7.5 | 177 | 1.2 min |
+| 3 | 1 Jardín · 3 | 🐜 Hormiga | 6.2 | +18.7 | 451 | 1.2 min |
+| 4 | 1 Jardín · 4 | 🐞 Vaquita | 15.6 | +46.8 | 1.1K | 1.2 min |
+| 5 | 1 Jardín · 5 | 🐝 Abeja | 39 | +117 | 2.9K | 1.2 min |
+| 6 | 1 Jardín · 6 | 🦋 Mariposa | 97.6 | +292 | 7.4K | 1.3 min |
+| 7 | 2 Granja · 1 | 🐣 Pollito | 244 | +732 | 18.7K | 1.3 min |
+| 8 | 2 Granja · 2 | 🐓 Gallo | 610 | +1.8K | 47.7K | 1.3 min |
+| 9 | 2 Granja · 3 | 🐇 Conejo | 1.5K | +4.5K | 121K | 1.3 min |
+| 10 | 2 Granja · 4 | 🐖 Chancho | 3.8K | +11.4K | 308K | 1.3 min |
+| 11 | 2 Granja · 5 | 🐑 Oveja | 9.5K | +28.6K | 782K | 1.4 min |
+| 12 | 2 Granja · 6 | 🐄 Vaca | 23.8K | +71.5K | 1.9M | 1.4 min |
+| 13 | 3 Bosque · 1 | 🦔 Erizo | 59.6K | +178K | 5M | 1.4 min |
+| 14 | 3 Bosque · 2 | 🐿️ Ardilla | 149K | +447K | 12.8M | 1.4 min |
+| 15 | 3 Bosque · 3 | 🦉 Búho | 372K | +1.1M | 32.5M | 1.5 min |
+| 16 | 3 Bosque · 4 | 🦡 Tejón | 931K | +2.7M | 82.7M | 1.5 min |
+| 17 | 3 Bosque · 5 | 🦌 Ciervo | 2.3M | +6.9M | 210M | 1.5 min |
+| 18 | 3 Bosque · 6 | 🐻 Oso | 5.8M | +17.4M | 533M | 1.5 min |
+| 19 | 4 Océano · 1 | 🐠 Pez | 14.5M | +43.6M | 1.3B | 1.6 min |
+| 20 | 4 Océano · 2 | 🦀 Cangrejo | 36.3M | +109M | 3.4B | 1.6 min |
+| 21 | 4 Océano · 3 | 🐙 Pulpo | 90.9M | +272M | 8.7B | 1.6 min |
+| 22 | 4 Océano · 4 | 🐬 Delfín | 227M | +682M | 22.2B | 1.6 min |
+| 23 | 4 Océano · 5 | 🦈 Tiburón | 568M | +1.7B | 56.4B | 1.7 min |
+| 24 | 4 Océano · 6 | 🐋 Ballena | 1.4B | +4.2B | 143B | 1.7 min |
+| 25 | 5 Pantano · 1 | 🦟 Mosquito | 3.5B | +10.6B | 364B | 1.7 min |
+| 26 | 5 Pantano · 2 | 🐸 Rana | 8.8B | +26.6B | 924B | 1.7 min |
+| 27 | 5 Pantano · 3 | 🦎 Lagartija | 22.2B | +66.6B | 2.3T | 1.8 min |
+| 28 | 5 Pantano · 4 | 🐢 Tortuga | 55.5B | +166B | 5.9T | 1.8 min |
+| 29 | 5 Pantano · 5 | 🦛 Hipopótamo | 138B | +416B | 15.1T | 1.8 min |
+| 30 | 5 Pantano · 6 | 🐊 Cocodrilo | 346B | +1T | 38.4T | 1.8 min |
+| 31 | 6 Ciudad · 1 | 🐀 Rata | 867B | +2.6T | 97.7T | 1.9 min |
+| 32 | 6 Ciudad · 2 | 🐦 Gorrión | 2.1T | +6.5T | 248T | 1.9 min |
+| 33 | 6 Ciudad · 3 | 🦝 Mapache | 5.4T | +16.2T | 630T | 1.9 min |
+| 34 | 6 Ciudad · 4 | 🐈 Gato | 13.5T | +40.6T | 1.6Qa | 2.0 min |
+| 35 | 6 Ciudad · 5 | 🐕 Perro | 33.8T | +101T | 4Qa | 2.0 min |
+| 36 | 6 Ciudad · 6 | 🐩 Caniche | 84.7T | +254T | 10.3Qa | 2.0 min |
+| 37 | 7 Lago · 1 | 🐟 Trucha | 211T | +635T | 26.2Qa | 2.1 min |
+| 38 | 7 Lago · 2 | 🦆 Pato | 529T | +1.5Qa | 66.6Qa | 2.1 min |
+| 39 | 7 Lago · 3 | 🦦 Nutria | 1.3Qa | +3.9Qa | 169Qa | 2.1 min |
+| 40 | 7 Lago · 4 | 🦫 Castor | 3.3Qa | +9.9Qa | 430Qa | 2.2 min |
+| 41 | 7 Lago · 5 | 🦢 Cisne | 8.2Qa | +24.8Qa | 1Qi | 2.2 min |
+| 42 | 7 Lago · 6 | 🦩 Flamenco | 20.6Qa | +62Qa | 2.7Qi | 2.2 min |
+| 43 | 8 Pradera · 1 | 🐁 Ratón | 51.6Qa | +155Qa | 7Qi | 2.3 min |
+| 44 | 8 Pradera · 2 | 🐹 Hámster | 129Qa | +387Qa | 17.9Qi | 2.3 min |
+| 45 | 8 Pradera · 3 | 🦃 Pavo | 323Qa | +969Qa | 45.4Qi | 2.3 min |
+| 46 | 8 Pradera · 4 | 🐗 Jabalí | 807Qa | +2.4Qi | 115Qi | 2.4 min |
+| 47 | 8 Pradera · 5 | 🐃 Búfalo | 2Qi | +6Qi | 293Qi | 2.4 min |
+| 48 | 8 Pradera · 6 | 🐎 Mustang | 5Qi | +15.1Qi | 745Qi | 2.5 min |
+| 49 | 9 Desierto · 1 | 🪲 Escarabajo | 12.6Qi | +37.8Qi | 1.8Sx | 2.5 min |
+| 50 | 9 Desierto · 2 | 🦂 Escorpión | 31.5Qi | +94.6Qi | 4.8Sx | 2.5 min |
+| 51 | 9 Desierto · 3 | 🐍 Serpiente | 78.8Qi | +236Qi | 12.2Sx | 2.6 min |
+| 52 | 9 Desierto · 4 | 🦊 Fénec | 197Qi | +591Qi | 31Sx | 2.6 min |
+| 53 | 9 Desierto · 5 | 🐪 Dromedario | 493Qi | +1.4Sx | 78.7Sx | 2.7 min |
+| 54 | 9 Desierto · 6 | 🐫 Camello | 1.2Sx | +3.6Sx | 200Sx | 2.7 min |
+| 55 | 10 Sabana · 1 | 🦓 Cebra | 3Sx | +9.2Sx | 508Sx | 2.7 min |
+| 56 | 10 Sabana · 2 | 🦒 Jirafa | 7.7Sx | +23.1Sx | 1.2Sp | 2.8 min |
+| 57 | 10 Sabana · 3 | 🐆 Leopardo | 19.2Sx | +57.7Sx | 3.2Sp | 2.8 min |
+| 58 | 10 Sabana · 4 | 🦏 Rinoceronte | 48.1Sx | +144Sx | 8.3Sp | 2.9 min |
+| 59 | 10 Sabana · 5 | 🐘 Elefante | 120Sx | +361Sx | 21.1Sp | 2.9 min |
+| 60 | 10 Sabana · 6 | 🦁 León | 300Sx | +902Sx | 53.7Sp | 3.0 min |
+| 61 | 11 Selva · 1 | 🦜 Loro | 752Sx | +2.2Sp | 136Sp | 3.0 min |
+| 62 | 11 Selva · 2 | 🐒 Mono | 1.8Sp | +5.6Sp | 346Sp | 3.1 min |
+| 63 | 11 Selva · 3 | 🦥 Perezoso | 4.7Sp | +14.1Sp | 880Sp | 3.1 min |
+| 64 | 11 Selva · 4 | 🐅 Tigre | 11.7Sp | +35.2Sp | 2.2Oc | 3.2 min |
+| 65 | 11 Selva · 5 | 🦧 Orangután | 29.3Sp | +88.1Sp | 5.6Oc | 3.2 min |
+| 66 | 11 Selva · 6 | 🦍 Gorila | 73.4Sp | +220Sp | 14.4Oc | 3.3 min |
+| 67 | 12 Montaña · 1 | 🐐 Cabra | 183Sp | +551Sp | 36.6Oc | 3.3 min |
+| 68 | 12 Montaña · 2 | 🐏 Carnero | 459Sp | +1.3Oc | 93.1Oc | 3.4 min |
+| 69 | 12 Montaña · 3 | 🦙 Llama | 1.1Oc | +3.4Oc | 236Oc | 3.4 min |
+| 70 | 12 Montaña · 4 | 🐂 Yak | 2.8Oc | +8.6Oc | 600Oc | 3.5 min |
+| 71 | 12 Montaña · 5 | 🦬 Bisonte | 7.1Oc | +21.5Oc | 1.5No | 3.5 min |
+| 72 | 12 Montaña · 6 | 🦅 Cóndor | 17.9Oc | +53.8Oc | 3.8No | 3.6 min |
+| 73 | 13 Polo · 1 | 🐧 Pingüino | 44.8Oc | +134Oc | 9.8No | 3.7 min |
+| 74 | 13 Polo · 2 | 🦭 Foca | 112Oc | +336Oc | 25No | 3.7 min |
+| 75 | 13 Polo · 3 | 🐺 Lobo ártico | 280Oc | +840Oc | 63.5No | 3.8 min |
+| 76 | 13 Polo · 4 | 🐳 Orca | 700Oc | +2.1No | 161No | 3.8 min |
+| 77 | 13 Polo · 5 | ☃️ Muñeco de nieve | 1.7No | +5.2No | 409No | 3.9 min |
+| 78 | 13 Polo · 6 | 🦣 Mamut | 4.3No | +13.1No | 1Dc | 4.0 min |
+| 79 | 14 Noche · 1 | 🦗 Grillo | 10.9No | +32.8No | 2.6Dc | 4.0 min |
+| 80 | 14 Noche · 2 | 🕷️ Araña | 27.3No | +82.1No | 6.7Dc | 4.1 min |
+| 81 | 14 Noche · 3 | 🦨 Zorrillo | 68.4No | +205No | 17Dc | 4.2 min |
+| 82 | 14 Noche · 4 | 🦇 Murciélago | 171No | +513No | 43.3Dc | 4.2 min |
+| 83 | 14 Noche · 5 | 🌚 Luna nueva | 427No | +1.2Dc | 110Dc | 4.3 min |
+| 84 | 14 Noche · 6 | 🌝 Luna llena | 1Dc | +3.2Dc | 279Dc | 4.4 min |
+| 85 | 15 Prehistoria · 1 | 🪱 Lombriz | 2.6Dc | +8Dc | 709Dc | 4.4 min |
+| 86 | 15 Prehistoria · 2 | 🦐 Trilobite | 6.6Dc | +20Dc | 1.8Ud | 4.5 min |
+| 87 | 15 Prehistoria · 3 | 🐚 Amonite | 16.7Dc | +50.1Dc | 4.5Ud | 4.6 min |
+| 88 | 15 Prehistoria · 4 | 🦤 Dodo | 41.7Dc | +125Dc | 11.6Ud | 4.6 min |
+| 89 | 15 Prehistoria · 5 | 🦕 Saurópodo | 104Dc | +313Dc | 29.5Ud | 4.7 min |
+| 90 | 15 Prehistoria · 6 | 🦖 Tiranosaurio | 261Dc | +783Dc | 75Ud | 4.8 min |
+| 91 | 16 Abismo · 1 | 🦪 Ostra | 652Dc | +1.9Ud | 190Ud | 4.9 min |
+| 92 | 16 Abismo · 2 | 🐡 Pez globo | 1.6Ud | +4.8Ud | 484Ud | 4.9 min |
+| 93 | 16 Abismo · 3 | 🦞 Langosta | 4Ud | +12.2Ud | 1.2Dd | 5.0 min |
+| 94 | 16 Abismo · 4 | 🦑 Calamar gigante | 10.1Ud | +30.5Ud | 3.1Dd | 5.1 min |
+| 95 | 16 Abismo · 5 | 🧜 Sirena | 25.4Ud | +76.4Ud | 7.9Dd | 5.2 min |
+| 96 | 16 Abismo · 6 | 🐉 Leviatán | 63.7Ud | +191Ud | 20.1Dd | 5.3 min |
+| 97 | 17 Mansión · 1 | 🎃 Calabaza | 159Ud | +477Ud | 51.1Dd | 5.4 min |
+| 98 | 17 Mansión · 2 | 👻 Fantasma | 398Ud | +1.1Dd | 130Dd | 5.4 min |
+| 99 | 17 Mansión · 3 | 💀 Calavera | 995Ud | +2.9Dd | 330Dd | 5.5 min |
+| 100 | 17 Mansión · 4 | 🧟 Zombi | 2.4Dd | +7.4Dd | 838Dd | 5.6 min |
+| 101 | 17 Mansión · 5 | 🧛 Vampiro | 6.2Dd | +18.6Dd | 2.1Td | 5.7 min |
+| 102 | 17 Mansión · 6 | 🧙 Bruja | 15.5Dd | +46.6Dd | 5.4Td | 5.8 min |
+| 103 | 18 Reino mágico · 1 | 🧚 Hada | 38.8Dd | +116Dd | 13.7Td | 5.9 min |
+| 104 | 18 Reino mágico · 2 | 🧝 Elfo | 97.2Dd | +291Dd | 34.9Td | 6.0 min |
+| 105 | 18 Reino mágico · 3 | 👹 Ogro | 243Dd | +729Dd | 88.6Td | 6.1 min |
+| 106 | 18 Reino mágico · 4 | 🧞 Genio | 607Dd | +1.8Td | 225Td | 6.2 min |
+| 107 | 18 Reino mágico · 5 | 🦄 Unicornio | 1.5Td | +4.5Td | 572Td | 6.3 min |
+| 108 | 18 Reino mágico · 6 | 🐲 Dragón | 3.7Td | +11.3Td | 1.4Qad | 6.4 min |
+| 109 | 19 Juguetería · 1 | 🧸 Osito | 9.4Td | +28.4Td | 3.6Qad | 6.5 min |
+| 110 | 19 Juguetería · 2 | 🐴 Caballito | 23.7Td | +71.2Td | 9.3Qad | 6.6 min |
+| 111 | 19 Juguetería · 3 | 🪆 Matrioska | 59.3Td | +178Td | 23.8Qad | 6.7 min |
+| 112 | 19 Juguetería · 4 | 🤡 Payaso | 148Td | +445Td | 60.4Qad | 6.8 min |
+| 113 | 19 Juguetería · 5 | 👾 Pixelito | 370Td | +1.1Qad | 153Qad | 6.9 min |
+| 114 | 19 Juguetería · 6 | 🤖 Robot | 927Td | +2.7Qad | 390Qad | 7.0 min |
+| 115 | 20 Galaxia · 1 | 👽 Alien | 2.3Qad | +6.9Qad | 991Qad | 7.1 min |
+| 116 | 20 Galaxia · 2 | 🛸 Platillo volador | 5.7Qad | +17.3Qad | 2.5Qid | 7.2 min |
+| 117 | 20 Galaxia · 3 | ☄️ Cometa | 14.4Qad | +43.4Qad | 6.3Qid | 7.4 min |
+| 118 | 20 Galaxia · 4 | 🪐 Planeta viviente | 36.2Qad | +108Qad | 16.2Qid | 7.5 min |
+| 119 | 20 Galaxia · 5 | 🌞 Sol viviente | 90.5Qad | +271Qad | 41.2Qid | 7.6 min |
+| 120 | 20 Galaxia · 6 | 🌟 Supernova | 226Qad | +679Qad | 104Qid | 7.7 min |
+
+
+### 7.6 Duración de la partida
+
+`npm run simulate` juega una partida entera con un jugador automático y mide cuándo se abre cada piso. El jugador hace **2 acciones por segundo**: abre un huevo, fusiona los dos iguales de nivel más bajo o compra en la tienda el nivel más caro que pueda pagar (mirando hasta 3 niveles por debajo del máximo a la venta). No cuenta el ingreso offline.
+
+| Piso | Se desbloquea | Lo que tarda ese piso |
+|---|---:|---:|
+| 1 Jardín | menos de 1 min | 1 min |
+| 2 Granja | 1 min | 4 min |
+| 3 Bosque | 6 min | 5 min |
+| 4 Océano | 12 min | 6 min |
+| 5 Pantano | 18 min | 7 min |
+| 6 Ciudad | 25 min | 7 min |
+| 7 Lago | 33 min | 8 min |
+| 8 Pradera | 41 min | 9 min |
+| 9 Desierto | 51 min | 10 min |
+| 10 Sabana | 1 h 1 min | 11 min |
+| 11 Selva | 1 h 12 min | 12 min |
+| 12 Montaña | 1 h 24 min | 13 min |
+| 13 Polo | 1 h 37 min | 14 min |
+| 14 Noche | 1 h 52 min | 16 min |
+| 15 Prehistoria | 2 h 8 min | 17 min |
+| 16 Abismo | 2 h 25 min | 19 min |
+| 17 Mansión | 2 h 45 min | 21 min |
+| 18 Reino mágico | 3 h 6 min | 23 min |
+| 19 Juguetería | 3 h 30 min | 25 min |
+| 20 Galaxia | 3 h 56 min | 23 min |
+
+- **Total: 4 h 19 min**, igual con otras semillas. Los primeros pisos salen en pocos minutos; los últimos, en unos 20 cada uno.
+- La velocidad del jugador casi no cambia el resultado: lo que manda es la tienda.
+- **Referencia:** con la economía de 5 pisos, el simulador tardaba 1.5–2 h en algo que un jugador real terminaba en 30–60 min. Una persona atenta puede ir más rápido que el simulador.
+- **Para ajustar la duración:** `SHOP_BASE_PRICE` la cambia de forma casi proporcional y `SHOP_PRICE_GROWTH`, de forma exponencial. Algunas pruebas:
+
+  | `SHOP_PRICE_GROWTH` | `SHOP_BASE_PRICE` | Partida completa |
+  |---|---|---|
+  | 2.53 | 60 | 2 h 48 min |
+  | 2.54 | 60 | 3 h 43 min |
+  | **2.54** | **70** | **4 h 19 min** (actual) |
+  | 2.55 | 60 | 5 h |
+  | 3 | 15 | no termina (la de 5 pisos) |
 
 ## 8. Pisos — FASE 2
 
-- **Pestañas:** una por piso, al pie de la pantalla.
-  - **Desbloqueada:** muestra la primera criatura del piso, su nombre y la ocupación ("7/12", en rojo si está lleno).
+- **Pestañas:** al pie de la pantalla se ven **5 a la vez**, con una flecha ◀ ▶ a cada costado.
+  - **Desbloqueada:** muestra la primera criatura del piso, su nombre y la ocupación ("7/12", en rojo si está lleno). Los nombres largos se achican para entrar.
   - **La del piso que se ve:** queda levantada y con borde blanco.
-  - **Bloqueada:** muestra 🔒 y "Piso N". Tocarla no cambia de piso: avisa qué hace falta ("Para abrir el Piso 3: fusioná Vaca + Vaca").
-- **Otras formas de cambiar:** en escritorio, las flechas ← y → del teclado van al piso desbloqueado anterior o siguiente.
+  - **La del piso de los huevos:** lleva un 🥚 en la esquina.
+  - **Bloqueada:** muestra 🔒 y "Piso N". Tocarla no cambia de piso: en el próximo a abrir, avisa qué fusionar ("Para abrir el Piso 3: fusioná Vaca + Vaca"); en los de más arriba, solo el orden ("El Piso 14 se abre después del Piso 13"), para no adelantar criaturas.
+- **Qué pisos se ven:** la barra se acomoda sola al cambiar de piso. Deja el piso que se ve en el centro y, si entra, también el de los huevos: jugando en el piso más alto, se ven el de los huevos, el actual y el próximo a abrir.
+- **Flechas de la barra:** corren la vista de a 5 pisos, sin cambiar de piso (sirven para mirar qué viene o volver a uno lejano). En los extremos se apagan.
+- **Otras formas de cambiar de piso:**
+  - En escritorio, las flechas ← y → del teclado van al piso desbloqueado anterior o siguiente.
+  - Tocar "Los huevos caen en el Piso N ›" en el HUD lleva a ese piso.
 - **Cambio de piso:** el campo hace un fundido y se redibuja con el color, la decoración y las criaturas de ese piso. La página toma el color del piso.
 - **Campos independientes:** cada piso tiene su propio campo y su capacidad de 12. Las criaturas de cada piso se fusionan ahí; dos tier 6 suben al piso siguiente.
-- **Huevos:** caen solo en el piso 1, también mientras se mira otro piso. En los demás pisos, la fila del huevo del HUD se reemplaza por "Recibe criaturas de los merges del Piso N".
+- **Huevos:** caen solo en el piso de los huevos (§4), también mientras se mira otro piso. En los demás pisos, la barra del huevo del HUD se reemplaza por "Los huevos caen en el Piso N ›".
 - **Ingreso:** todos los pisos generan ingreso aunque no se estén viendo; los "+X" se ven solo en el piso que está en pantalla.
-- **Avisos:** cuando llega una criatura a un piso que no se está viendo, su pestaña late.
+- **Avisos:** cuando se desbloquea un piso o le llega una criatura mientras no se lo ve, su pestaña late. Si la pestaña no está a la vista, late la flecha de ese lado.
 - **Al recargar** se vuelve al piso 1. El piso que se mira es estado de la vista, no se guarda.
 - **Al reiniciar** se vuelve al piso 1 y los demás se bloquean.
 
@@ -190,13 +352,13 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
 - **Barra superior:**
   - monedas con un ícono de moneda y el ingreso total "+X/s";
   - el nombre del piso que se ve y el botón **🛒 Tienda**;
-  - en el piso 1, la barra del próximo huevo; en los demás, de dónde llegan sus criaturas;
+  - en el piso de los huevos, la barra del próximo huevo; en los demás, en qué piso caen (tocándolo, lleva ahí);
   - la capacidad del piso que se ve ("7/12").
 - **Campo:** fondo del color del piso con decoración tenue.
 - **Banner** "¡Campo lleno!" mientras no quede lugar en el piso que se ve.
 - **Popups:** "¡Nueva criatura descubierta!", la tienda, la bienvenida tras una ausencia y la confirmación de reinicio. Se muestran de a uno y, mientras están abiertos, bloquean el campo, las pestañas y el teclado.
-- **Toasts:** avisos cortos ("¡Piso 2 desbloqueado!", "El Piso 2 está lleno", "¡Nivel máximo!", qué abre un piso bloqueado).
-- **Pie:** las pestañas de pisos y, debajo, una pista de cómo jugar, los botones redondos 🔊 (efectos) y 🎵 (música) y el botón **Reiniciar** (abajo, para no tocarlo sin querer).
+- **Toasts:** avisos cortos ("¡Piso 2 desbloqueado!", "¡Ahora los huevos caen en el Piso 2: Granja!", "El Piso 2 está lleno", "¡Nivel máximo!", qué abre un piso bloqueado).
+- **Pie:** las pestañas de pisos (5 a la vista, con flechas) y, debajo, una pista de cómo jugar, los botones redondos 🔊 (efectos) y 🎵 (música) y el botón **Reiniciar** (abajo, para no tocarlo sin querer).
 
 ## 10. Guardado — FASE 1
 
@@ -211,6 +373,7 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
   - Los valores fuera de rango se corrigen y las entidades inválidas se descartan.
   - Si el JSON está corrupto o la versión es desconocida, se copia a `fusionitos.save.corrupt` y el juego arranca de cero, sin romperse.
 - **Migraciones:** si cambia el formato, se sube `SAVE_VERSION` y se agrega una migración. v1 → v2 agrega las compras vacías; un guardado de F1/F2 carga sin perder nada.
+- **Guardados de cuando había 5 pisos:** cargan sin migración, porque los niveles son los mismos. Se completan los pisos y las compras que faltan, y los pisos nuevos arrancan bloqueados. El viejo piso 5 (Galaxia, niveles 25–30) pasa a ser el Pantano.
 - **Si `localStorage` falla** (modo privado, cuota llena), el juego sigue funcionando sin guardar.
 - **Reiniciar:** botón con un popup de confirmación. Borra todo y empieza de cero.
 
@@ -224,15 +387,15 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
 | `FLOOR_CAPACITY` | 12 | Máximo de criaturas + huevos por piso. |
 | `EGG_INTERVAL_MS` | 5000 | Cada cuánto cae un huevo. |
 | `FIRST_EGG_DELAY_MS` | 1000 | Espera hasta el primer huevo de una partida nueva. |
-| `EGG_FLOOR` | 0 | Piso donde caen los huevos (el 1). |
+| `EGG_FLOOR_LAG` | 3 | Cuántos pisos por debajo del más alto desbloqueado caen los huevos (como mínimo, en el 1). |
 | `SPAWN_CANDIDATES` | 12 | Posiciones sorteadas para elegir dónde cae un huevo. |
 | `INCOME_BASE` | 1 | Ingreso del nivel 1 (monedas/s). |
 | `INCOME_GROWTH` | 2.5 | Factor de ingreso por nivel. |
 | `COIN_POP_INTERVAL_MS` | 3000 | Cada cuánto suelta monedas una criatura. |
 | `MAX_TICK_MS` | 1000 | Tope de tiempo simulado por frame (evita saltos). |
 | `AUTOSAVE_INTERVAL_MS` | 10000 | Autoguardado. |
-| `SHOP_BASE_PRICE` | 15 | Tienda · precio del nivel 1. |
-| `SHOP_PRICE_GROWTH` | 3 | Tienda · factor de precio por nivel. |
+| `SHOP_BASE_PRICE` | 70 | Tienda · precio del nivel 1. |
+| `SHOP_PRICE_GROWTH` | 2.54 | Tienda · factor de precio por nivel (apenas más que `INCOME_GROWTH`, ver §7.3). |
 | `SHOP_PURCHASE_GROWTH` | 1.15 | Tienda · encarecimiento por compra. |
 | `SHOP_LEVELS_BELOW_MAX` | 2 | Tienda · distancia mínima a la máxima descubierta. |
 | `OFFLINE_INCOME_RATE` | 0.5 | Offline · fracción del ingreso. |
@@ -268,8 +431,14 @@ Las constantes visuales (tamaños, velocidades de deambular, duraciones de anima
 - [x] Efectos sintetizados para cada acción y música de fondo en loop.
 - [x] Botones para silenciar efectos y música, con la preferencia guardada.
 
+### Extra — 20 pisos ✅
+- [x] 20 pisos de temáticas distintas, con 120 criaturas.
+- [x] Los huevos suben de piso: caen 3 pisos por debajo del más alto abierto, y de cada huevo sale el tier 1 de su piso.
+- [x] Barra de pestañas con 5 pisos a la vista y flechas; 🥚 en la pestaña del piso de los huevos; atajo desde el HUD.
+- [x] Economía rebalanceada con un simulador (`npm run simulate`): unas 4 h para terminar.
+
 ### Ideas futuras (sin fase asignada)
-Arte definitivo para las 30 criaturas, más pisos, logros, tutorial guiado y PWA instalable.
+Arte definitivo para las 120 criaturas, logros, tutorial guiado y PWA instalable.
 
 ## 13. Sonido y música
 

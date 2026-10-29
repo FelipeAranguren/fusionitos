@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { ANIM, COLORS, DEPTH, SIZES, WANDER } from '../config/visuals.ts';
 import type { EntityId } from '../core/types.ts';
 import { clampToField } from './fieldSpace.ts';
-import { creatureTextureKey } from './textures.ts';
+import { ensureCreatureTexture } from './textures.ts';
 
 type Mode = 'idle' | 'walk' | 'drag' | 'merging';
 export type Highlight = 'none' | 'match' | 'target';
@@ -44,7 +44,7 @@ export class CreatureView extends Phaser.GameObjects.Container {
     const shadow = scene.add.ellipse(0, size * 0.42, size * 0.68, size * 0.2, COLORS.shadow, COLORS.shadowAlpha);
     this.ring = scene.add.ellipse(0, size * 0.42, size * 0.98, size * 0.34);
     this.ring.setVisible(false);
-    this.sprite = scene.add.image(0, 0, creatureTextureKey(level)).setDisplaySize(size, size);
+    this.sprite = scene.add.image(0, 0, ensureCreatureTexture(scene, level)).setDisplaySize(size, size);
     this.baseScale = this.sprite.scaleX;
     this.add([this.ring, shadow, this.sprite]);
 

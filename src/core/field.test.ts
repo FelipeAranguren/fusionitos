@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { adjacentUnlockedFloor, isFloorFull, isFloorUnlocked } from './field.ts';
+import { adjacentUnlockedFloor, highestUnlockedFloor, isFloorFull, isFloorUnlocked } from './field.ts';
 import { addCreature, emptyState, fillWithCreatures } from './test-helpers.ts';
 
 describe('pisos desbloqueados', () => {
@@ -10,6 +10,15 @@ describe('pisos desbloqueados', () => {
     state.discovered = [7];
     expect(isFloorUnlocked(state, 1)).toBe(true);
     expect(isFloorUnlocked(state, 2)).toBe(false);
+  });
+
+  it('highestUnlockedFloor: el más alto con su tier 1 descubierto', () => {
+    const state = emptyState();
+    expect(highestUnlockedFloor(state)).toBe(0);
+    state.discovered = [1, 7, 13];
+    expect(highestUnlockedFloor(state)).toBe(2);
+    state.discovered = [115];
+    expect(highestUnlockedFloor(state)).toBe(19);
   });
 
   it('adjacentUnlockedFloor salta los pisos bloqueados y se detiene en los bordes', () => {

@@ -5,9 +5,10 @@ import { STRINGS } from '../config/strings.ts';
 import { ANIM, COLORS, GAME_WIDTH, LAYOUT } from '../config/visuals.ts';
 import { formatNumber } from '../core/format.ts';
 import { creatureConfig, floorConfig, unlockRequirementLevel } from '../core/levels.ts';
+import { pageTabWindow, tabWindowStart } from '../view/tabWindow.ts';
 import { TEXTURES } from '../view/textures.ts';
 import { Button } from '../view/ui/Button.ts';
-import { FloorTab } from '../view/ui/FloorTab.ts';
+import { FloorTab, TabArrow } from '../view/ui/FloorTab.ts';
 import { IconToggle } from '../view/ui/IconToggle.ts';
 import type { Modal } from '../view/ui/Modal.ts';
 import { openConfirmPopup, openDiscoveryPopup, openWelcomePopup } from '../view/ui/popups.ts';
@@ -22,12 +23,15 @@ const BAR = { x: LAYOUT.hud.x + 120, width: LAYOUT.hud.width - 290, height: 30 }
 /** Lo último que se mostró, para tocar los textos y gráficos solo cuando cambian. */
 interface Shown {
   floor: number;
+  eggFloor: number;
   coins: string;
   income: string;
   capacity: string;
   progress: number;
   full: boolean;
+  /** Por piso, para avisar cuando cambian. */
   counts: number[];
+  unlocked: boolean[];
 }
 
 /**
@@ -42,10 +46,15 @@ export class UIScene extends Phaser.Scene {
   private capacityText!: Phaser.GameObjects.Text;
   private eggIcon!: Phaser.GameObjects.Image;
   private eggBar!: Phaser.GameObjects.Graphics;
-  private upperFloorText!: Phaser.GameObjects.Text;
+  /** En los demás pisos, en lugar de la barra: dónde caen los huevos (tocándolo, lleva ahí). */
+  private eggHint!: Phaser.GameObjects.Container;
+  private eggHintText!: Phaser.GameObjects.Text;
   private banner!: Phaser.GameObjects.Container;
   private bannerTween: Phaser.Tweens.Tween | null = null;
   private tabs: FloorTab[] = [];
+  private tabArrows: TabArrow[] = [];
+  /** Primer piso de la barra de pestañas. */
+  private tabsFirst = 0;
   private toasts!: ToastQueue;
   private modal: Modal | null = null;
   private shop: ShopPopup | null = null;
@@ -59,10 +68,20 @@ export class UIScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.shown = { floor: -1, coins: '', income: '', capacity: '', progress: -1, full: false, counts: [] };
+    this.shown = {
+      floor: -1,
+      eggFloor: -1,
+      coins: '',
+      income: '',
+      capacity: '',
+      progress: -1,
+      full: false,
+      counts: [],
+      unlocked: [],
+    };
     this.createHud();
     this.createBanner();
-    this.tabs = FLOORS.map((_, floor) => new FloorTab(this, floor, (selected) => this.onTabSelected(selected)));
+    this.createTabs();
     this.add
       .text(LAYOUT.hintX, LAYOUT.hintY, STRINGS.hint, textStyle({ size: 32, weight: 500, stroke: false, align: 'left' }))
       .setOrigin(0, 0.5)
@@ -92,10 +111,8 @@ export class UIScene extends Phaser.Scene {
     const { model, ui } = this.ctx;
     this.unsubscribers = [
       model.events.on('creatureDiscovered', ({ level }) => this.queueDiscovery(level)),
-      model.events.on('floorUnlocked', ({ floor }) => {
-        this.toasts.push(STRINGS.floorUnlocked(floor, floorConfig(floor).name));
-        this.tabs[floor]?.pulse();
-      }),
+      // La pestaña salta desde update(), cuando ya se acomodó la barra.
+      model.events.on('floorUnlocked', ({ floor }) => this.toasts.push(STRINGS.floorUnlocked(floor, floorConfig(floor).name))),
       model.events.on('stateReset', () => {
         this.discoveryQueue.length = 0;
         this.toasts.clear();
@@ -118,16 +135,24 @@ export class UIScene extends Phaser.Scene {
       this.ctx.audio.play('welcome');
     }
     const floor = view.floor;
+    const eggFloor = model.eggFloor;
     const floorChanged = floor !== shown.floor;
-    if (floorChanged) {
-      this.floorText.setText(STRINGS.floorLabel(floor, floorConfig(floor).name));
-      // Los huevos caen solo en un piso; en los demás, la fila explica cómo se llenan.
-      const eggFloor = floor === BALANCE.EGG_FLOOR;
-      this.eggIcon.setVisible(eggFloor);
-      this.eggBar.setVisible(eggFloor);
-      this.upperFloorText.setVisible(!eggFloor).setText(eggFloor ? '' : STRINGS.upperFloorHint(floor - 1));
-      shown.floor = floor;
+    const eggFloorChanged = eggFloor !== shown.eggFloor;
+    if (floorChanged) this.floorText.setText(STRINGS.floorLabel(floor, floorConfig(floor).name));
+    if (floorChanged || eggFloorChanged) {
+      // Los huevos caen en un solo piso; en los demás, en lugar de la barra se dice en cuál.
+      const eggsHere = floor === eggFloor;
+      this.eggIcon.setAlpha(eggsHere ? 1 : 0.6);
+      this.eggBar.setVisible(eggsHere);
+      this.eggHint.setVisible(!eggsHere);
+      this.eggHintText.setText(STRINGS.eggsFallOn(eggFloor));
+      this.tabsFirst = tabWindowStart(floor, eggFloor);
     }
+    // Sube al desbloquear pisos; al reiniciar baja, y eso no se avisa.
+    const eggFloorRose = eggFloorChanged && shown.eggFloor >= 0 && eggFloor > shown.eggFloor;
+    if (eggFloorRose) this.toasts.push(STRINGS.eggFloorMoved(eggFloor, floorConfig(eggFloor).name));
+    shown.floor = floor;
+    shown.eggFloor = eggFloor;
 
     const coins = formatNumber(Math.floor(model.coins));
     if (coins !== shown.coins) {
@@ -158,17 +183,8 @@ export class UIScene extends Phaser.Scene {
     if (full !== shown.full || floorChanged) this.setBannerVisible(full);
     shown.full = full;
 
-    this.tabs.forEach((tab, index) => {
-      const count = model.floorCount(index);
-      const unlocked = model.isFloorUnlocked(index);
-      // Avisa cuando llega una criatura a otro piso (los huevos del piso 1 no, serían cada 5 s).
-      const previous = shown.counts[index];
-      if (previous !== undefined && count > previous && index !== floor && index !== BALANCE.EGG_FLOOR && unlocked) {
-        tab.pulse();
-      }
-      shown.counts[index] = count;
-      tab.render(index === floor, { unlocked, count, full: model.isFloorFull(index) });
-    });
+    this.updateTabs(floor, eggFloor);
+    if (eggFloorRose) this.attention(eggFloor);
   }
 
   /** Botones y pestañas visibles, con su centro en coordenadas del juego (para el hook de debug). */
@@ -181,12 +197,13 @@ export class UIScene extends Phaser.Scene {
             ? object.name || object.label
             : object instanceof FloorTab
               ? `tab:${object.floor + 1}`
-              : object instanceof IconToggle
+              : object instanceof IconToggle || object instanceof TabArrow || object === this.eggHint
                 ? object.name
                 : null;
         if (label && object instanceof Phaser.GameObjects.Container && object.visible && object.input?.enabled) {
-          const bounds = object.getBounds();
-          buttons.push({ label, x: bounds.centerX, y: bounds.centerY });
+          // El área de toque está centrada en el contenedor (getBounds no cuenta los Graphics de adentro).
+          const { tx, ty } = object.getWorldTransformMatrix();
+          buttons.push({ label, x: tx, y: ty });
         }
         if (object instanceof Phaser.GameObjects.Container) visit(object.list);
       }
@@ -223,11 +240,32 @@ export class UIScene extends Phaser.Scene {
 
     this.eggIcon = this.add.image(left + 36, EGG_ROW_Y, TEXTURES.egg).setDisplaySize(70, 70);
     this.eggBar = this.add.graphics();
-    this.upperFloorText = this.add
-      .text(left, EGG_ROW_Y, '', textStyle({ size: 30, weight: 500, stroke: false, align: 'left' }))
-      .setOrigin(0, 0.5)
-      .setAlpha(0.85)
+    // Se toca en todo el ancho de la barra, no solo sobre las letras.
+    this.eggHintText = this.add
+      .text(-BAR.width / 2, 0, '', textStyle({ size: 32, weight: 600, stroke: false, align: 'left' }))
+      .setOrigin(0, 0.5);
+    this.eggHint = this.add
+      .container(BAR.x + BAR.width / 2, EGG_ROW_Y, [this.eggHintText])
+      .setSize(BAR.width, 80)
+      .setName('eggs:go')
       .setVisible(false);
+    let pressed = false;
+    this.eggHint
+      .setInteractive({ useHandCursor: true })
+      .on(Phaser.Input.Events.GAMEOBJECT_POINTER_DOWN, () => {
+        pressed = true;
+        this.eggHintText.setAlpha(0.6);
+      })
+      .on(Phaser.Input.Events.GAMEOBJECT_POINTER_OUT, () => {
+        pressed = false;
+        this.eggHintText.setAlpha(1);
+      })
+      .on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, () => {
+        this.eggHintText.setAlpha(1);
+        if (!pressed) return;
+        pressed = false;
+        this.goToEggFloor();
+      });
     this.capacityText = this.add.text(right, EGG_ROW_Y, '', textStyle({ size: 42, align: 'right' })).setOrigin(1, 0.5);
   }
 
@@ -298,16 +336,78 @@ export class UIScene extends Phaser.Scene {
     this.tweens.add({ targets: text, scale: { from: 1.1, to: 1 }, duration: 220, ease: 'Quad.easeOut' });
   }
 
+  private createTabs(): void {
+    this.tabsFirst = 0;
+    this.tabs = Array.from({ length: LAYOUT.tabs.visible }, (_, slot) => new FloorTab(this, slot, (floor) => this.onTabSelected(floor)));
+    this.tabArrows = ([-1, 1] as const).map((side) => new TabArrow(this, side, () => this.pageTabs(side)));
+  }
+
+  /** Pestañas a la vista y flechas; de paso, avisa lo que pasa en otros pisos. */
+  private updateTabs(floor: number, eggFloor: number): void {
+    const { model } = this.ctx;
+    const shown = this.shown;
+    for (let index = 0; index < FLOORS.length; index++) {
+      const count = model.floorCount(index);
+      const unlocked = model.isFloorUnlocked(index);
+      // Salta al desbloquearse y cuando le llega una criatura desde otro piso
+      // (al de los huevos no: sería cada 5 s).
+      const opened = shown.unlocked[index] === false && unlocked;
+      const previous = shown.counts[index];
+      const arrived = previous !== undefined && count > previous && index !== floor && index !== eggFloor && unlocked;
+      if (opened || arrived) this.attention(index);
+      shown.counts[index] = count;
+      shown.unlocked[index] = unlocked;
+    }
+    this.tabs.forEach((tab, slot) => {
+      const index = this.tabsFirst + slot;
+      tab.render(index, index === floor, {
+        unlocked: shown.unlocked[index],
+        count: shown.counts[index],
+        full: model.isFloorFull(index),
+        eggs: index === eggFloor,
+      });
+    });
+    const [previous, next] = this.tabArrows;
+    previous.setEnabled(this.tabsFirst > 0);
+    next.setEnabled(this.tabsFirst + this.tabs.length < FLOORS.length);
+  }
+
+  /** Hace saltar la pestaña de un piso; si quedó fuera de la vista, la flecha de ese lado. */
+  private attention(floor: number): void {
+    const slot = floor - this.tabsFirst;
+    if (slot < 0) this.tabArrows[0].pulse();
+    else if (slot >= this.tabs.length) this.tabArrows[1].pulse();
+    else this.tabs[slot].pulse();
+  }
+
+  /** Las flechas corren la barra de a una página, sin cambiar de piso. */
+  private pageTabs(direction: -1 | 1): void {
+    if (this.modal) return;
+    const first = pageTabWindow(this.tabsFirst, direction);
+    if (first === this.tabsFirst) return;
+    this.tabsFirst = first;
+    this.ctx.audio.play('click');
+  }
+
   private onTabSelected(floor: number): void {
     if (this.modal) return;
-    if (!this.ctx.model.isFloorUnlocked(floor)) {
+    const { model } = this.ctx;
+    if (!model.isFloorUnlocked(floor)) {
       this.ctx.audio.play('denied');
+      // Para el piso que sigue se dice qué fusionar; más arriba no, para no adelantar criaturas.
       const required = unlockRequirementLevel(floor);
-      if (required !== null) this.toasts.push(STRINGS.floorLocked(floor, creatureConfig(required).name));
+      const next = floor > 0 && model.isFloorUnlocked(floor - 1);
+      if (required !== null && next) this.toasts.push(STRINGS.floorLocked(floor, creatureConfig(required).name));
+      else this.toasts.push(STRINGS.floorLockedAfter(floor));
       return;
     }
     if (floor === this.ctx.view.floor) this.ctx.audio.play('click');
     this.ctx.ui.emit('selectFloor', { floor });
+  }
+
+  private goToEggFloor(): void {
+    if (this.modal) return;
+    this.ctx.ui.emit('selectFloor', { floor: this.ctx.model.eggFloor });
   }
 
   private stepFloor(direction: 1 | -1): void {

@@ -12,8 +12,11 @@ export const BALANCE = {
   EGG_INTERVAL_MS: 5000,
   /** Espera hasta el primer huevo de una partida nueva. */
   FIRST_EGG_DELAY_MS: 1000,
-  /** Piso (índice) donde caen los huevos. */
-  EGG_FLOOR: 0,
+  /**
+   * Los huevos caen este número de pisos por debajo del piso más alto desbloqueado (mínimo, el 1):
+   * con el Piso 5 abierto caen en el 2; con el 10, en el 7. Siempre sale el tier 1 de ese piso.
+   */
+  EGG_FLOOR_LAG: 3,
   /** Posiciones sorteadas para ubicar un huevo; gana la más alejada del resto. */
   SPAWN_CANDIDATES: 12,
 
@@ -29,8 +32,8 @@ export const BALANCE = {
   AUTOSAVE_INTERVAL_MS: 10_000,
 
   /** Tienda: precio(n, k) = SHOP_BASE_PRICE × SHOP_PRICE_GROWTH^(n−1) × SHOP_PURCHASE_GROWTH^k */
-  SHOP_BASE_PRICE: 15,
-  SHOP_PRICE_GROWTH: 3,
+  SHOP_BASE_PRICE: 70,
+  SHOP_PRICE_GROWTH: 2.54,
   SHOP_PURCHASE_GROWTH: 1.15,
   /** Solo se compran criaturas con n ≤ máximo descubierto − esto. */
   SHOP_LEVELS_BELOW_MAX: 2,

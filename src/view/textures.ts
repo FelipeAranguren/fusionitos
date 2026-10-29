@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import { EGG, FLOORS } from '../config/creatures.ts';
+import { EGG } from '../config/creatures.ts';
 import { EMOJI_FONT_FAMILY, ICONS, SIZES } from '../config/visuals.ts';
 import { MAX_LEVEL, creatureConfig } from '../core/levels.ts';
 
@@ -18,8 +18,25 @@ export const TEXTURES = {
   music: 'music',
 } as const;
 
-export const creatureTextureKey = (level: number): string => `creature-${level}`;
-export const decorTextureKey = (emoji: string): string => `decor-${emoji}`;
+const creatureTextureKey = (level: number): string => `creature-${level}`;
+const decorTextureKey = (emoji: string): string => `decor-${emoji}`;
+
+/**
+ * Clave de la textura de una criatura. Se genera la primera vez que se pide: son 120 y la mayoría
+ * no se ven hasta muy avanzada la partida.
+ */
+export function ensureCreatureTexture(scene: Phaser.Scene, level: number): string {
+  const key = creatureTextureKey(level);
+  createEmojiTexture(scene, key, creatureConfig(level).emoji, SIZES.emojiTexture, SIZES.emojiOutline);
+  return key;
+}
+
+/** Clave de la textura de un emoji de decoración del campo; se genera la primera vez que se pide. */
+export function ensureDecorTexture(scene: Phaser.Scene, emoji: string): string {
+  const key = decorTextureKey(emoji);
+  createEmojiTexture(scene, key, emoji, 128, 0);
+  return key;
+}
 
 /** Encola en el loader las imágenes definidas en el catálogo. */
 export function preloadCatalogImages(scene: Phaser.Scene): void {
@@ -30,19 +47,16 @@ export function preloadCatalogImages(scene: Phaser.Scene): void {
   if (EGG.image) scene.load.image(TEXTURES.egg, EGG.image);
 }
 
-/** Genera las texturas que no vinieron como imagen: emojis, moneda, chispa y cáscara. */
+/**
+ * Genera las texturas fijas que no vinieron como imagen: huevo, íconos, moneda, chispa y cáscara.
+ * Las de criaturas y decoración se generan al usarlas (`ensureCreatureTexture`, `ensureDecorTexture`).
+ */
 export function generateTextures(scene: Phaser.Scene): void {
-  for (let level = 1; level <= MAX_LEVEL; level++) {
-    createEmojiTexture(scene, creatureTextureKey(level), creatureConfig(level).emoji, SIZES.emojiTexture, SIZES.emojiOutline);
-  }
   createEmojiTexture(scene, TEXTURES.egg, EGG.emoji, SIZES.emojiTexture, SIZES.emojiOutline);
   createEmojiTexture(scene, TEXTURES.lock, ICONS.lock, 128, 4);
   createEmojiTexture(scene, TEXTURES.shop, ICONS.shop, 128, 4);
   createEmojiTexture(scene, TEXTURES.sound, ICONS.sound, 128, 4);
   createEmojiTexture(scene, TEXTURES.music, ICONS.music, 128, 4);
-  for (const emoji of new Set(FLOORS.flatMap((floor) => floor.decor))) {
-    createEmojiTexture(scene, decorTextureKey(emoji), emoji, 128, 0);
-  }
   createCoinTexture(scene);
   createSparkTexture(scene);
   createShellTexture(scene);

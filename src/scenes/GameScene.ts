@@ -11,7 +11,7 @@ import { CreatureView } from '../view/CreatureView.ts';
 import { EggView } from '../view/EggView.ts';
 import { Effects } from '../view/effects.ts';
 import { clampToField, toField, toWorld } from '../view/fieldSpace.ts';
-import { decorTextureKey } from '../view/textures.ts';
+import { ensureDecorTexture } from '../view/textures.ts';
 import type { GameContext } from './context.ts';
 
 export interface DebugView {
@@ -96,7 +96,7 @@ export class GameScene extends Phaser.Scene {
       const emoji = floor.decor[i % floor.decor.length];
       const size = SIZES.decor * (0.7 + rng() * 0.6);
       this.add
-        .image(field.x + 70 + rng() * (field.width - 140), field.y + 70 + rng() * (field.height - 140), decorTextureKey(emoji))
+        .image(field.x + 70 + rng() * (field.width - 140), field.y + 70 + rng() * (field.height - 140), ensureDecorTexture(this, emoji))
         .setDisplaySize(size, size)
         .setAngle((rng() - 0.5) * 40)
         .setAlpha(floor.decorAlpha ?? SIZES.decorAlpha)

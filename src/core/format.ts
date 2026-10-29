@@ -1,6 +1,10 @@
 import { STRINGS } from '../config/strings.ts';
 
-const SUFFIXES = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc'] as const;
+// Con 120 niveles los precios llegan a ~10^50: los sufijos cubren hasta 10^63.
+const SUFFIXES = [
+  '', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc',
+  'Ud', 'Dd', 'Td', 'Qad', 'Qid', 'Sxd', 'Spd', 'Ocd', 'Nod', 'Vg',
+] as const;
 
 // Margen para que errores de coma flotante (5.6e9 / 1e9 = 5.6000…01) no bajen un dígito al truncar.
 const EPSILON = 1e-9;

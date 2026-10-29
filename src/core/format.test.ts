@@ -21,7 +21,10 @@ describe('formatNumber', () => {
     [1e12, '1T'],
     [1.5e15, '1.5Qa'],
     [2.5 ** 29, '346B'],
-    [1e36, '1.00e36'],
+    [1e36, '1Ud'],
+    [4.2e49, '42Qid'],
+    [1e63, '1Vg'],
+    [1e66, '1.00e66'],
   ])('%d → %s', (value, expected) => {
     expect(formatNumber(value)).toBe(expected);
   });

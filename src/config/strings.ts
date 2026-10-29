@@ -38,7 +38,9 @@ export const STRINGS = {
   floorTab: (floor: number) => `Piso ${floor + 1}`,
   floorLocked: (floor: number, creatureName: string) =>
     `🔒 Para abrir el Piso ${floor + 1}: fusioná ${creatureName} + ${creatureName}`,
-  upperFloorHint: (floorBelow: number) => `Recibe criaturas de los merges del Piso ${floorBelow + 1}`,
+  floorLockedAfter: (floor: number) => `🔒 El Piso ${floor + 1} se abre después del Piso ${floor}`,
+  eggsFallOn: (floor: number) => `Los huevos caen en el Piso ${floor + 1} ›`,
+  eggFloorMoved: (floor: number, name: string) => `🥚 ¡Ahora los huevos caen en el Piso ${floor + 1}: ${name}!`,
   floorUnlocked: (floor: number, name: string) => `🔓 ¡Piso ${floor + 1} desbloqueado: ${name}!`,
   movedUp: (floor: number) => `⬆️ ¡Al Piso ${floor + 1}!`,
   floorFull: (floor: number) => `El Piso ${floor + 1} está lleno`,

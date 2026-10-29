@@ -5,7 +5,7 @@ import { COLORS } from '../../config/visuals.ts';
 import { incomePerSecond, type OfflineEarnings } from '../../core/economy.ts';
 import { formatDuration, formatNumber } from '../../core/format.ts';
 import { creatureConfig, floorConfig, floorOfLevel, tierOfLevel } from '../../core/levels.ts';
-import { TEXTURES, creatureTextureKey } from '../textures.ts';
+import { TEXTURES, ensureCreatureTexture } from '../textures.ts';
 import { Button } from './Button.ts';
 import { Modal } from './Modal.ts';
 import { textStyle } from './textStyle.ts';
@@ -31,7 +31,7 @@ export function openDiscoveryPopup(scene: Phaser.Scene, level: number, onClosed:
   scene.tweens.add({ targets: rays, angle: 360, duration: 14_000, repeat: -1 });
 
   const glow = scene.add.circle(0, -120, 185, floorCfg.fieldColor, 1);
-  const creature = scene.add.image(0, -120, creatureTextureKey(level)).setDisplaySize(330, 330);
+  const creature = scene.add.image(0, -120, ensureCreatureTexture(scene, level)).setDisplaySize(330, 330);
   const baseScale = creature.scaleX;
   creature.setScale(0);
   scene.tweens.add({ targets: creature, scale: baseScale, duration: 520, delay: 120, ease: 'Back.easeOut(2.5)' });

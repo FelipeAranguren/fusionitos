@@ -87,11 +87,11 @@ describe('merges rechazados (no tocan el estado)', () => {
       },
     },
     {
-      name: 'dos de nivel 30 (máximo)',
+      name: 'dos de nivel 120 (máximo)',
       reason: 'max-level',
       setup: () => {
         const state = emptyState();
-        return { state, source: addCreature(state, 30).id, target: addCreature(state, 30, 0.2, 0.2).id };
+        return { state, source: addCreature(state, 120).id, target: addCreature(state, 120, 0.2, 0.2).id };
       },
     },
   ] as const;
