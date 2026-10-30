@@ -7,7 +7,7 @@ Juego web *merge idle* de un jugador, para escritorio y celular. Usa Phaser 3.90
 1. **Leé `GAME_DESIGN.md`.** Es la fuente de verdad: reglas, fórmulas, catálogo de criaturas, constantes y fases.
 2. Si el cambio altera reglas, fórmulas, constantes o el catálogo, **actualizá `GAME_DESIGN.md` en el mismo commit**. Si cambia el balance o el catálogo:
    - regenerá la tabla de niveles con `npm run design:tables` y pegala en la sección 7.5;
-   - corré `npm run simulate` y actualizá la sección 7.6. El objetivo es que la partida completa dure unas **5 h 20 min** (eran 4 h; se alargó bajando el ingreso un 20 %).
+   - corré `npm run simulate` y actualizá la sección 7.6. El objetivo es que la partida completa dure unas **4 h 30 min**. Con los huevos 1 piso abajo bajó de 5 h 20 min, y se decidió no compensarlo con menos ingreso.
 3. Implementá solo la fase que se pidió. Lo marcado como FASE 2 o FASE 3 no se hace hasta que se pida explícitamente.
 
 ## Comandos
