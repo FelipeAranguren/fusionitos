@@ -1,4 +1,6 @@
 import type Phaser from 'phaser';
+import type { PushResult } from './account/CloudSave.ts';
+import type { CloudStatus } from './account/cloudStatus.ts';
 import type { AudioEngine } from './audio/AudioEngine.ts';
 import { GAME_HEIGHT, GAME_WIDTH } from './config/visuals.ts';
 import type { GameModel } from './core/GameModel.ts';
@@ -25,6 +27,10 @@ export interface DebugApi {
   audio(): { state: string; musicOn: boolean; sfxOn: boolean; musicPlaying: boolean; recent: string[] };
   /** Acceso directo: si se ofrece y para qué sistema son los pasos. */
   install(): { available: boolean; platform: string };
+  /** Cuenta con la que se juega, esta apertura (`session`) y cómo está la partida en la nube. */
+  account(): AccountDebugInfo;
+  /** Sube la partida ya, sin esperar el intervalo (de paso, se entera si otra apertura la tomó). */
+  pushCloud(): Promise<PushResult>;
   /** Pide mostrar un piso (igual que tocar su pestaña). */
   selectFloor(floor: number): void;
   /** Piso que muestra el campo ahora (índice desde 0). */
@@ -34,6 +40,7 @@ export interface DebugApi {
   /** Botones y pestañas ("tab:N") visibles, con su centro en píxeles de la página. */
   buttons(): { label: string; page: PagePoint }[];
   toPage(x: number, y: number): PagePoint;
+  /** Borra la copia de la partida de la cuenta en este dispositivo (la de la nube queda). */
   clearSave(): void;
 }
 
@@ -43,13 +50,24 @@ declare global {
   }
 }
 
+export interface AccountDebugInfo extends CloudStatus {
+  email: string;
+  session: string;
+}
+
 interface DebugOptions {
   clearSave(): void;
   simulateAway(ms: number): void;
   audio: AudioEngine;
+  account(): AccountDebugInfo;
+  pushCloud(): Promise<PushResult>;
 }
 
-export function installDebugHooks(game: Phaser.Game, ctx: GameContext, { clearSave, simulateAway, audio }: DebugOptions): void {
+export function installDebugHooks(
+  game: Phaser.Game,
+  ctx: GameContext,
+  { clearSave, simulateAway, audio, account, pushCloud }: DebugOptions,
+): void {
   const { model } = ctx;
   const toPage = (x: number, y: number): PagePoint => {
     const rect = game.canvas.getBoundingClientRect();
@@ -70,6 +88,8 @@ export function installDebugHooks(game: Phaser.Game, ctx: GameContext, { clearSa
       recent: [...audio.recent],
     }),
     install: () => ({ available: ctx.install.available, platform: ctx.install.platform }),
+    account,
+    pushCloud,
     selectFloor: (floor) => ctx.ui.emit('selectFloor', { floor }),
     currentFloor: () => ctx.view.floor,
     entities: () => game.scene.getScene<GameScene>('Game').debugViews().map((view) => ({ ...view, page: toPage(view.x, view.y) })),

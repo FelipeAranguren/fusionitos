@@ -3,8 +3,16 @@ import { MAX_LEVEL, floorOfLevel, isValidLevel } from './levels.ts';
 import { createInitialState } from './state.ts';
 import type { DeepReadonly, Entity, GameState } from './types.ts';
 
+/** Partida de este dispositivo de antes de las cuentas (sin dueño): pasa a la primera cuenta que entra. */
 export const SAVE_KEY = 'fusionitos.save';
-export const CORRUPT_SAVE_KEY = 'fusionitos.save.corrupt';
+export const CORRUPT_SAVE_KEY = `${SAVE_KEY}.corrupt`;
+/** Copia de la partida sin dueño una vez que pasó a una cuenta. Por las dudas: el juego no la vuelve a leer. */
+export const DEVICE_BACKUP_KEY = `${SAVE_KEY}.device-backup`;
+
+/** Copia local de la partida de una cuenta (`uid` de Firebase): con ella se puede jugar sin conexión. */
+export function accountSaveKey(uid: string): string {
+  return `${SAVE_KEY}.account.${uid}`;
+}
 /**
  * Subila (y agregá una migración) cada vez que cambie la forma de GameState.
  * v1: F1/F2. v2: compras de la tienda (`purchases`).
@@ -78,24 +86,33 @@ export function parseSave(raw: string | null): ParsedSave {
   return { status: 'ok', state, savedAt: finiteOr(file.savedAt, 0) };
 }
 
-/** Lee y escribe el guardado. Nunca lanza: si el storage falla, el juego sigue sin guardar. */
+export interface SaveManagerOptions {
+  /** Clave en el storage; por defecto, la partida sin dueño de antes de las cuentas. */
+  key?: string;
+  now?: () => number;
+}
+
+/** Lee y escribe un guardado. Nunca lanza: si el storage falla, el juego sigue sin guardar. */
 export class SaveManager {
   private readonly storage: StorageLike | null;
+  private readonly key: string;
   private readonly now: () => number;
 
-  constructor(storage: StorageLike | null, now: () => number = Date.now) {
+  constructor(storage: StorageLike | null, { key = SAVE_KEY, now = Date.now }: SaveManagerOptions = {}) {
     this.storage = storage;
+    this.key = key;
     this.now = now;
   }
 
-  /** Guardado y su fecha, o null si no hay. Un guardado corrupto se respalda aparte y se ignora. */
+  /** Guardado y su fecha, o null si no hay. Un guardado corrupto se respalda aparte (`<clave>.corrupt`) y se ignora. */
   load(): LoadedSave | null {
-    const raw = this.read(SAVE_KEY);
+    const raw = this.read(this.key);
     const parsed = parseSave(raw);
     if (parsed.status === 'ok') return { state: parsed.state, savedAt: parsed.savedAt };
     if (parsed.status === 'invalid' && raw !== null) {
-      console.warn(`[guardado] ${parsed.reason}: se respalda en "${CORRUPT_SAVE_KEY}" y se empieza de cero.`);
-      this.write(CORRUPT_SAVE_KEY, raw);
+      const backupKey = `${this.key}.corrupt`;
+      console.warn(`[guardado] ${parsed.reason}: se respalda en "${backupKey}" y se ignora.`);
+      this.write(backupKey, raw);
     }
     return null;
   }
@@ -105,15 +122,21 @@ export class SaveManager {
    * `savedAt` permite fechar el guardado en el último momento en que el juego corrió (pestaña oculta).
    */
   save(state: DeepReadonly<GameState>, savedAt: number = this.now()): boolean {
-    return this.write(SAVE_KEY, serializeSave(state, savedAt));
+    return this.write(this.key, serializeSave(state, savedAt));
   }
 
   clear(): void {
     try {
-      this.storage?.removeItem(SAVE_KEY);
+      this.storage?.removeItem(this.key);
     } catch {
       // Sin storage no hay nada que borrar.
     }
+  }
+
+  /** Mueve el guardado a `backupKey` (pisando lo que hubiera) y lo saca de su clave. */
+  archive(backupKey: string): void {
+    const raw = this.read(this.key);
+    if (raw !== null && this.write(backupKey, raw)) this.clear();
   }
 
   private read(key: string): string | null {

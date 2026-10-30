@@ -1,3 +1,4 @@
+import type { CloudStatus } from '../account/cloudStatus.ts';
 import type { AudioPort } from '../audio/AudioEngine.ts';
 import type { OfflineEarnings } from '../core/economy.ts';
 import type { Emitter } from '../core/emitter.ts';
@@ -24,6 +25,15 @@ export interface ViewState {
   welcome: OfflineEarnings | null;
 }
 
+/** La cuenta con la que se juega (botón 👤). */
+export interface AccountPort {
+  readonly email: string;
+  /** Cómo está la partida en la nube. */
+  cloudStatus(): Readonly<CloudStatus>;
+  /** Guarda (también en la nube), cierra la sesión y vuelve a la pantalla de ingreso. */
+  signOut(): void;
+}
+
 /** Lo que main.ts le pasa a las escenas por constructor (sin variables globales). */
 export interface GameContext {
   readonly model: GameModel;
@@ -32,6 +42,7 @@ export interface GameContext {
   readonly audio: AudioPort;
   /** Acceso directo: si ofrecerlo y el diálogo del navegador. */
   readonly install: InstallPrompt;
+  readonly account: AccountPort;
   /** Guarda ya mismo. */
   saveNow(): void;
   /** Borra la partida y guarda el estado nuevo. */

@@ -12,9 +12,10 @@ describe('arquitectura del core', () => {
     expect(Object.keys(sources).length).toBeGreaterThan(8);
   });
 
-  it.each(Object.entries(sources))('%s no depende de Phaser ni del DOM', (_path, source) => {
+  it.each(Object.entries(sources))('%s no depende de Phaser, del DOM ni de Firebase', (_path, source) => {
     expect(source).not.toMatch(/from\s+['"]phaser['"]|import\(\s*['"]phaser['"]\s*\)/);
     expect(source).not.toMatch(/\b(window|document|localStorage|sessionStorage)\./);
-    expect(source).not.toMatch(/from\s+['"]\.\.\/(scenes|view)\//);
+    expect(source).not.toMatch(/from\s+['"]\.\.\/(scenes|view|account)\//);
+    expect(source).not.toMatch(/from\s+['"]firebase\//);
   });
 });

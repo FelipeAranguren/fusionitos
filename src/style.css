@@ -27,3 +27,246 @@ body {
   display: block;
   touch-action: none;
 }
+
+/* Pantalla de la cuenta (src/account/AccountScreen.ts): HTML encima del juego. Los colores llegan desde visuals.ts. */
+.account {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  box-sizing: border-box;
+  padding: max(24px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  font-family: 'Fredoka', system-ui, sans-serif;
+  color: var(--account-text, #3b2f22);
+  /* El body bloquea gestos y selección para el canvas; acá hacen falta para escribir. */
+  touch-action: manipulation;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.account[hidden] {
+  display: none;
+}
+
+.account.is-dim {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.account-card {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 400px;
+  margin: auto;
+  padding: 26px 24px 22px;
+  border-radius: 28px;
+  background: var(--account-card, #fff8ec);
+  box-shadow: 0 10px 0 rgba(0, 0, 0, 0.18), 0 18px 40px rgba(0, 0, 0, 0.25);
+  text-align: center;
+}
+
+.account-logo {
+  font-size: 60px;
+  line-height: 1.1;
+  animation: account-wobble 2.4s ease-in-out infinite;
+}
+
+.account-brand {
+  margin: 4px 0 0;
+  font-size: 34px;
+  font-weight: 700;
+}
+
+.account-title {
+  margin: 10px 0 6px;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.account-lead,
+.account-loading {
+  margin: 0 0 16px;
+  color: var(--account-muted, #7a6a55);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.account-loading {
+  margin: 12px 0 4px;
+  color: inherit;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.account-note {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--account-row, #f3e7d3);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+
+.account-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.account-input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #e2d4bd;
+  border-radius: 14px;
+  background: #ffffff;
+  color: inherit;
+  font: inherit;
+  /* 16 px o más: si no, iOS hace zoom al tocar el campo. */
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.account-input:focus {
+  outline: none;
+  border-color: var(--account-primary, #4cae4c);
+  box-shadow: 0 0 0 3px rgba(76, 174, 76, 0.25);
+}
+
+.account-password {
+  position: relative;
+}
+
+.account-password .account-input {
+  padding-right: 54px;
+}
+
+.account-eye {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  width: 46px;
+  height: 46px;
+  border: 0;
+  background: none;
+  font-size: 22px;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.account-hint,
+.account-feedback {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.account-hint {
+  margin-top: -4px;
+  color: var(--account-muted, #7a6a55);
+  font-weight: 500;
+}
+
+.account-hint[hidden],
+.account-link[hidden] {
+  display: none;
+}
+
+.account-feedback {
+  font-weight: 600;
+}
+
+.account-feedback:empty {
+  display: none;
+}
+
+.account-feedback.is-error {
+  color: var(--account-danger, #e5533d);
+}
+
+.account-feedback.is-info {
+  color: var(--account-link, #2e7d32);
+}
+
+.account-primary {
+  width: 100%;
+  height: 56px;
+  margin-top: 4px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--account-primary, #4cae4c);
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.22);
+  color: #ffffff;
+  font: inherit;
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.account-primary:active:not(:disabled) {
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.22);
+  transform: translateY(3px);
+}
+
+.account-primary:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.account-link {
+  margin-top: 6px;
+  padding: 6px;
+  border: 0;
+  background: none;
+  color: var(--account-link, #2e7d32);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.account-link:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.account-switch {
+  margin: 8px 0 0;
+  color: var(--account-muted, #7a6a55);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.account-switch .account-link {
+  margin: 0;
+  padding: 2px;
+}
+
+@keyframes account-wobble {
+  0%,
+  100% {
+    transform: rotate(-7deg);
+  }
+  50% {
+    transform: rotate(7deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .account-logo {
+    animation: none;
+  }
+}

@@ -2,9 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BALANCE } from '../config/balance.ts';
 import {
   CORRUPT_SAVE_KEY,
+  DEVICE_BACKUP_KEY,
   SAVE_KEY,
   SAVE_VERSION,
   SaveManager,
+  accountSaveKey,
   parseSave,
   serializeSave,
   type StorageLike,
@@ -163,7 +165,7 @@ describe('parseSave', () => {
 describe('SaveManager', () => {
   it('guarda y vuelve a cargar', () => {
     const storage = new MemoryStorage();
-    const manager = new SaveManager(storage, () => 1000);
+    const manager = new SaveManager(storage, { now: () => 1000 });
     const state = sampleState();
     expect(manager.save(state)).toBe(true);
     expect(JSON.parse(storage.getItem(SAVE_KEY) ?? '')).toMatchObject({ version: SAVE_VERSION, savedAt: 1000 });
@@ -172,8 +174,34 @@ describe('SaveManager', () => {
 
   it('se puede fechar el guardado en otro momento (pestaña oculta)', () => {
     const storage = new MemoryStorage();
-    new SaveManager(storage, () => 9999).save(sampleState(), 1234);
+    new SaveManager(storage, { now: () => 9999 }).save(sampleState(), 1234);
     expect(new SaveManager(storage).load()?.savedAt).toBe(1234);
+  });
+
+  it('cada cuenta guarda en su propia clave, aparte de la partida sin dueño', () => {
+    const storage = new MemoryStorage();
+    const account = new SaveManager(storage, { key: accountSaveKey('abc'), now: () => 50 });
+    account.save(sampleState());
+    expect(storage.getItem(SAVE_KEY)).toBeNull();
+    expect(storage.getItem('fusionitos.save.account.abc')).not.toBeNull();
+    expect(new SaveManager(storage, { key: accountSaveKey('otra') }).load()).toBeNull();
+
+    storage.setItem(accountSaveKey('rota'), '{roto');
+    expect(new SaveManager(storage, { key: accountSaveKey('rota') }).load()).toBeNull();
+    expect(storage.getItem(`${accountSaveKey('rota')}.corrupt`)).toBe('{roto');
+  });
+
+  it('archive mueve el guardado a otra clave', () => {
+    const storage = new MemoryStorage();
+    const device = new SaveManager(storage, { now: () => 70 });
+    device.save(sampleState());
+    const raw = storage.getItem(SAVE_KEY);
+    device.archive(DEVICE_BACKUP_KEY);
+    expect(storage.getItem(SAVE_KEY)).toBeNull();
+    expect(storage.getItem(DEVICE_BACKUP_KEY)).toBe(raw);
+    expect(device.load()).toBeNull();
+    expect(() => device.archive(DEVICE_BACKUP_KEY)).not.toThrow();
+    expect(storage.getItem(DEVICE_BACKUP_KEY)).toBe(raw);
   });
 
   it('sin guardado devuelve null', () => {

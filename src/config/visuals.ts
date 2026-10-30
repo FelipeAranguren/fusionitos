@@ -25,8 +25,10 @@ export const LAYOUT = {
   resetButton: { x: 946, width: 220, height: 64 },
   /** Botones redondos para silenciar efectos y música, entre la pista y "Reiniciar". */
   audioToggles: { sfxX: 690, musicX: 772, size: 72, hitPadding: 20 },
-  /** Botón redondo de acceso directo, antes de los de sonido (solo cuando se ofrece). */
-  installButtonX: 608,
+  /** Botón redondo de la cuenta, antes de los de sonido. */
+  accountButtonX: 608,
+  /** Botón redondo de acceso directo, antes del de la cuenta (solo cuando se ofrece). */
+  installButtonX: 526,
 } as const;
 
 /** Íconos de la interfaz que se generan desde emojis (los de criaturas están en creatures.ts). */
@@ -36,6 +38,7 @@ export const ICONS = {
   sound: '🔊',
   music: '🎵',
   install: '📲',
+  account: '👤',
 } as const;
 
 export const SIZES = {
@@ -145,6 +148,7 @@ export const COLORS = {
   textLight: '#ffffff',
   textDark: '#3b2f22',
   textMuted: '#7a6a55',
+  textLink: '#2e7d32',
   textCoin: '#ffe27a',
   stroke: '#2a2a1f',
 } as const;

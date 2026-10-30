@@ -13,7 +13,13 @@ import { FloorTab, TabArrow } from '../view/ui/FloorTab.ts';
 import { IconButton } from '../view/ui/IconButton.ts';
 import { IconToggle } from '../view/ui/IconToggle.ts';
 import type { Modal } from '../view/ui/Modal.ts';
-import { openConfirmPopup, openDiscoveryPopup, openInstallHelpPopup, openWelcomePopup } from '../view/ui/popups.ts';
+import {
+  openAccountPopup,
+  openConfirmPopup,
+  openDiscoveryPopup,
+  openInstallHelpPopup,
+  openWelcomePopup,
+} from '../view/ui/popups.ts';
 import { roundedRect } from '../view/ui/shapes.ts';
 import { ShopPopup } from '../view/ui/ShopPopup.ts';
 import { TabStrip } from '../view/ui/TabStrip.ts';
@@ -112,6 +118,13 @@ export class UIScene extends Phaser.Scene {
       onClick: () => this.confirmReset(),
     });
     this.createAudioToggles();
+    new IconButton(this, LAYOUT.accountButtonX, LAYOUT.hintY, {
+      icon: TEXTURES.account,
+      size: LAYOUT.audioToggles.size,
+      hitPadding: LAYOUT.audioToggles.hitPadding,
+      name: 'account',
+      onPress: () => this.openAccount(),
+    });
     this.installButton = new IconButton(this, LAYOUT.installButtonX, LAYOUT.hintY, {
       icon: TEXTURES.install,
       size: LAYOUT.audioToggles.size,
@@ -212,7 +225,7 @@ export class UIScene extends Phaser.Scene {
     const installable = this.ctx.install.available;
     if (installable !== shown.installable) {
       this.installButton.setVisible(installable);
-      this.fitHint(installable ? LAYOUT.installButtonX : LAYOUT.audioToggles.sfxX);
+      this.fitHint(installable ? LAYOUT.installButtonX : LAYOUT.accountButtonX);
       shown.installable = installable;
     }
 
@@ -337,6 +350,14 @@ export class UIScene extends Phaser.Scene {
   private fitHint(firstButtonX: number): void {
     const available = firstButtonX - LAYOUT.audioToggles.size / 2 - LAYOUT.hintGap - LAYOUT.hintX;
     this.hintText.setScale(Math.min(1, available / this.hintText.width));
+  }
+
+  /** La cuenta: mail, estado de la nube y cerrar sesión. */
+  private openAccount(): void {
+    if (this.busy) return;
+    this.ctx.audio.play('click');
+    const { account } = this.ctx;
+    this.modal = openAccountPopup(this, account.email, account.cloudStatus(), () => account.signOut(), () => this.onModalClosed());
   }
 
   /** Acceso directo: el diálogo del navegador si lo hay; si no, los pasos para hacerlo a mano. */

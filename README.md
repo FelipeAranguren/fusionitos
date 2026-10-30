@@ -7,6 +7,7 @@ Descubrí las 120 criaturas de los 20 pisos, del Jardín a la Galaxia.
 
 ## Cómo se juega
 
+- Entrá con tu mail y una contraseña: tu partida queda guardada en tu cuenta y la seguís en cualquier celular o compu.
 - Tocá los huevos para abrirlos.
 - Arrastrá una criatura sobre otra igual para fusionarlas.
 - Dos del último nivel de un piso suben al piso siguiente y lo desbloquean.
@@ -17,13 +18,14 @@ Descubrí las 120 criaturas de los 20 pisos, del Jardín a la Galaxia.
 
 ## Desarrollo
 
-Phaser 3 + TypeScript + Vite, sin backend: el progreso se guarda en el navegador.
+Phaser 3 + TypeScript + Vite. Las cuentas y las partidas van en Firebase (Authentication y Firestore), con una copia en el navegador.
 
 ```bash
 npm install
 npm run dev
 ```
 
+- `npm run emulators` y `npm run dev:emulators`: el juego contra los emuladores de Firebase, para probar cuentas sin tocar las de verdad (necesita Java).
 - `npm test`: tests (Vitest).
 - `npm run build`: build de producción en `dist/`.
 - Cada push a `master` corre los tests y publica el juego en GitHub Pages (`.github/workflows/deploy.yml`).

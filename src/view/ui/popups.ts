@@ -1,4 +1,5 @@
 import type Phaser from 'phaser';
+import { describeCloudStatus, type CloudStatus } from '../../account/cloudStatus.ts';
 import { BALANCE } from '../../config/balance.ts';
 import { STRINGS } from '../../config/strings.ts';
 import { COLORS } from '../../config/visuals.ts';
@@ -114,6 +115,47 @@ export function openInstallHelpPopup(scene: Phaser.Scene, platform: InstallPlatf
       height: 120,
       color: COLORS.primary,
       fontSize: 52,
+      onClick: () => modal.close(),
+    }),
+  ]);
+  return modal;
+}
+
+/** La cuenta: con qué mail se juega, cómo está la partida en la nube y cerrar sesión. */
+export function openAccountPopup(
+  scene: Phaser.Scene,
+  email: string,
+  cloud: Readonly<CloudStatus>,
+  onSignOut: () => void,
+  onClosed: () => void,
+): Modal {
+  const modal = new Modal(scene, 860, 820, onClosed);
+  const muted = { ...dark(34, 500, COLORS.textMuted), align: 'center', wordWrap: { width: 740 } };
+  modal.card.add([
+    scene.add.image(0, -300, TEXTURES.account).setDisplaySize(120, 120),
+    scene.add.text(0, -190, STRINGS.account.popupTitle, dark(58, 700)).setOrigin(0.5),
+    // Un mail no tiene espacios: si no entra, se corta en cualquier letra.
+    scene.add
+      .text(0, -95, email, { ...dark(40, 600), align: 'center', wordWrap: { width: 760, useAdvancedWrap: true } })
+      .setOrigin(0.5),
+    scene.add.text(0, 25, describeCloudStatus(cloud, Date.now()), muted).setOrigin(0.5),
+    new Button(scene, -195, 270, {
+      label: STRINGS.account.signOut,
+      width: 340,
+      height: 116,
+      color: COLORS.danger,
+      fontSize: 40,
+      onClick: () => {
+        modal.close();
+        onSignOut();
+      },
+    }),
+    new Button(scene, 195, 270, {
+      label: STRINGS.account.back,
+      width: 340,
+      height: 116,
+      color: COLORS.primary,
+      fontSize: 42,
       onClick: () => modal.close(),
     }),
   ]);

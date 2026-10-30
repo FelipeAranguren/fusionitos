@@ -1,6 +1,6 @@
 # CLAUDE.md — Fusionitos
 
-Juego web *merge idle* de un jugador, para escritorio y celular. Usa Phaser 3.90 + TypeScript + Vite, sin backend; el guardado va en `localStorage`.
+Juego web *merge idle* de un jugador, para escritorio y celular. Usa Phaser 3.90 + TypeScript + Vite. Para jugar hay que entrar con mail y contraseña: las cuentas y la partida en la nube van con Firebase (Authentication + Firestore Lite), y hay una copia de la partida en `localStorage`.
 
 ## Antes de cada cambio
 
@@ -14,7 +14,9 @@ Juego web *merge idle* de un jugador, para escritorio y celular. Usa Phaser 3.90
 
 | Comando | Qué hace |
 |---|---|
-| `npm run dev` | Servidor de desarrollo en http://localhost:5173. Agregá `-- --host` para probar desde el celular en la misma red. |
+| `npm run dev` | Servidor de desarrollo en http://localhost:5173, con el proyecto **real** de Firebase: lo que se juega ahí queda en la cuenta de verdad. Agregá `-- --host` para probar desde el celular en la misma red. |
+| `npm run emulators` | Emuladores de Firebase (Authentication en el puerto 9099 y Firestore en el 8080) con el proyecto `demo-fusionitos`, sin conexión ni datos reales. Necesita Java 11 o más en el `PATH`. Al cerrarlos se borra todo. |
+| `npm run dev:emulators` | Servidor de desarrollo en http://localhost:5174 conectado a los emuladores. Para probar cuentas sin tocar las de verdad. |
 | `npm run build` | `tsc` (chequeo de tipos) + build de producción en `dist/`. |
 | `npm run preview` | Sirve el build. |
 | `npm test` | Tests con Vitest (una pasada). `npm run test:watch` para el modo watch. |
@@ -30,6 +32,11 @@ Antes de dar algo por terminado: `npm test` y `npm run build` sin errores.
 - Si los tests fallan, no se publica.
 - Pages sirve el juego en una subcarpeta (`/fusionitos/`): por eso el build usa rutas relativas (`base: './'` en `vite.config.ts`). No lo cambies.
 - Pushear publica. Hacelo solo cuando se pida.
+- **Firebase** (consola en https://console.firebase.google.com, plan gratis):
+  - Los datos del proyecto van en `src/config/cloud.ts`. No son secretos: viajan en el juego publicado.
+  - Lo que protege las partidas son las reglas de `firestore.rules`. Si las cambiás, publicalas también en la consola (Firestore → Reglas): el repo no las sube solo.
+  - En la consola tiene que estar habilitado Authentication → Correo electrónico/contraseña, y `felipearanguren.github.io` en los dominios autorizados.
+  - Sin los datos del proyecto, el juego publicado no deja entrar: no publiques con `cloud.ts` vacío.
 
 ## Arquitectura
 
@@ -41,22 +48,35 @@ src/config/   datos y constantes, sin lógica
   strings.ts    todos los textos de la UI (en español)
   sounds.ts     recetas de los efectos de sonido y mezcla general (AUDIO_MIX)
   music.ts      partitura del loop de música
+  cloud.ts      Firebase: datos del proyecto, emuladores y tiempos del guardado en la nube (CLOUD_SAVE)
+src/account/  cuentas, sin Phaser:
+  openAccount.ts   al arrancar: sesión (o pantalla de ingreso) y con qué partida se juega
+  AccountScreen.ts pantalla de la cuenta en HTML (ingreso, esperas y avisos), encima del juego
+  CloudSave.ts     la partida en Firestore (`saves/{uid}`) y quién la está usando
+  firebase.ts      arma Firebase; con `--mode emulators`, contra los emuladores
+              authErrors.ts, ownership.ts y cloudStatus.ts son puros y tienen tests
 src/audio/    sonido con Web Audio, sin Phaser: AudioEngine (efectos y música, silencio, pausa);
               notation.ts y settings.ts son puros y tienen tests
 src/install/  acceso directo, sin Phaser: InstallPrompt (aviso `beforeinstallprompt` del navegador);
               platform.ts (cuándo ofrecerlo y qué pasos explicar) es puro y tiene tests
-src/core/     lógica pura del juego: SIN Phaser, SIN DOM; testeada con Vitest
+src/core/     lógica pura del juego: SIN Phaser, SIN DOM, SIN Firebase; testeada con Vitest
   GameModel.ts  fachada: estado + comandos (tick, hatch, merge, move, reset) + eventos
+  saveChoice.ts con qué partida arranca una cuenta (nube, copia local o la de antes de las cuentas)
 src/scenes/   escenas Phaser: BootScene (texturas), GameScene (campo de un piso), UIScene (HUD, pestañas y popups)
   context.ts    GameContext: modelo, bus de UI (`ui`: toast, selectFloor, showClosing, closingShown) y estado de la vista (`view.floor`, `view.welcome`)
 src/view/     objetos visuales (CreatureView, EggView), efectos y widgets de UI (Button, Modal, FloorTab, ShopPopup…)
-src/main.ts   arma GameModel + SaveManager + Phaser.Game y conecta el guardado
+src/main.ts   abre la cuenta y recién después arma GameModel + Phaser.Game; conecta el guardado (local y nube)
 public/       manifest.webmanifest e icons/ (instalable como app): los PNG se renderizan desde
               icons/icon.svg con Chrome headless; el maskable lleva el dibujo al 80 %
+firestore.rules  reglas de acceso a las partidas (cada cuenta, solo la suya)
+firebase.json    puertos de los emuladores y las reglas que cargan
 ```
 
 ### Reglas de capas
-- `src/core` **no importa Phaser ni toca el DOM** (lo verifica `src/core/architecture.test.ts`). Lo que necesita del entorno se inyecta: RNG, storage y reloj.
+- `src/core` **no importa Phaser ni Firebase ni toca el DOM** (lo verifica `src/core/architecture.test.ts`). Lo que necesita del entorno se inyecta: RNG, storage y reloj.
+- **Cuentas:** el juego (modelo y Phaser) se crea recién cuando hay sesión y partida (`openAccount`). La pantalla de la cuenta es HTML porque Phaser no tiene campos de texto; mientras se juega queda oculta y se usa para los avisos que bloquean todo (otra apertura tomó la partida, guardando antes de cerrar sesión).
+  - A la nube se sube el mismo texto que se guarda en `localStorage` (`serializeSave`), así las migraciones valen para los dos.
+  - Cada apertura del juego tiene un `session` al azar que se guarda junto a la partida. Antes de subir, una transacción mira si sigue siendo la suya (`ownership.ts`); si no, esa apertura deja de guardar.
 - Las vistas **nunca mutan el estado**: llaman a comandos del `GameModel` y reaccionan a sus eventos (`eggSpawned`, `eggHatched`, `creaturesMerged`, `creatureAdded`, `coinsPopped`, `creatureDiscovered`, `floorUnlocked`, `floorClosed`, `stateReset`).
 - Los valores continuos (monedas, ingreso/s, progreso del huevo, capacidad) el HUD los lee del modelo en `update()`. No se crean eventos para eso.
 - La lógica aplica el cambio al instante; las animaciones son solo visuales y nunca bloquean al modelo.
@@ -103,7 +123,11 @@ public/       manifest.webmanifest e icons/ (instalable como app): los PNG se re
 
 ## Guardado
 
-- Clave `fusionitos.save`, con formato `{ version, savedAt, state }`. La versión actual es la **2** (v1 → v2 agregó `purchases`).
+- Formato `{ version, savedAt, state }`. La versión actual es la **2** (v1 → v2 agregó `purchases`).
+- Claves:
+  - `fusionitos.save.account.<uid>`: la copia local de la partida de cada cuenta.
+  - `fusionitos.save`: la partida de antes de las cuentas. Pasa a la primera cuenta que entra en ese dispositivo y se mueve a `fusionitos.save.device-backup` (`chooseStartingSave`, GAME_DESIGN §15).
+  - En la nube, `saves/{uid}` en Firestore: `{ save, session }`, donde `save` es el mismo texto.
 - `savedAt` es el último momento en que el juego corrió: con la pestaña oculta, `main.ts` fecha los guardados en el momento en que se ocultó. El ingreso offline depende de eso.
 - **Si cambia la forma de `GameState`:**
   1. subí `SAVE_VERSION` en `src/core/save.ts`;
@@ -119,10 +143,15 @@ public/       manifest.webmanifest e icons/ (instalable como app): los PNG se re
   - `addCoins(n)` y `simulateAway(ms)` (ingreso offline y bienvenida, como al volver a la pestaña);
   - `audio()`: estado del audio (`locked` hasta el primer gesto), música y efectos prendidos, y los últimos sonidos que sonaron;
   - `install()`: si se ofrece el acceso directo y para qué sistema son los pasos;
+  - `account()`: el mail, esta apertura (`session`) y cómo está la nube; `pushCloud()` sube ya (y así se entera si otra apertura tomó la partida);
   - `selectFloor(floor)` y `currentFloor()` (pisos desde 0);
   - `entities()` (las del piso que se ve), con posiciones en píxeles de la página;
-  - `buttons()`: los botones visibles, con posiciones en píxeles de la página. Se llaman `shop`, `shop:close`, `buy:N`, `reset`, `tab:N` (solo las 5 pestañas a la vista), `tabs:prev`, `tabs:next`, `eggs:go` (el atajo al piso de los huevos), `toggle:sfx`, `toggle:music`, `install`; los de los popups, por su texto;
-  - `toPage(x, y)` y `clearSave()`.
+  - `buttons()`: los botones visibles, con posiciones en píxeles de la página. Se llaman `shop`, `shop:close`, `buy:N`, `reset`, `tab:N` (solo las 5 pestañas a la vista), `tabs:prev`, `tabs:next`, `eggs:go` (el atajo al piso de los huevos), `toggle:sfx`, `toggle:music`, `install`, `account`; los de los popups, por su texto;
+  - `toPage(x, y)` y `clearSave()` (borra la copia local de la cuenta; la de la nube queda).
+- **Cuentas en las pruebas:** usá los emuladores (`npm run emulators` y `npm run dev:emulators`, puerto 5174), nunca el proyecto real. Para cada prueba, un contexto de navegador nuevo y una cuenta inventada (`algo@fusionitos.test`); el formulario es HTML (`input[name=email]`, `input[name=password]`, `.account-primary`).
+  - Para ver la partida en la nube: `GET http://127.0.0.1:8080/v1/projects/demo-fusionitos/databases/(default)/documents/saves/<uid>` con `Authorization: Bearer owner`.
+  - Los mails (recuperar la contraseña) no salen: el emulador los lista en `http://127.0.0.1:9099/emulator/v1/projects/demo-fusionitos/oobCodes`.
+  - Para simular que la nube no responde: `context.route('http://127.0.0.1:8080/**', (r) => r.abort())`.
 - Con el MCP de Playwright (`.mcp.json`): `npm run dev` y abrir http://localhost:5173.
   - Para arrastrar sobre el canvas, usá `page.mouse` (down / move con pasos / up) con las coordenadas de `__debug.entities()`.
   - Las pruebas automáticas corren en un navegador headless aparte. El usuario suele jugar en la ventana visible de Playwright: no le cambies el viewport (`browser_resize` lo fija y rompe el ajuste y el zoom).

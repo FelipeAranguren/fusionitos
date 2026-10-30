@@ -10,7 +10,7 @@ Caen huevos, nacen criaturas, y al juntar dos iguales evolucionan a la siguiente
 El objetivo es descubrir las 120 criaturas, subiendo de piso en piso por los 20 pisos. Terminar lleva unas 4 h 30 min de juego seguido (§7.6).
 
 - **Plataforma:** navegador, en escritorio y celular. Se juega con mouse o con el dedo.
-- **Stack:** Phaser 3 (3.90) + TypeScript + Vite. Tests con Vitest. Sin backend: el progreso se guarda en `localStorage`.
+- **Stack:** Phaser 3 (3.90) + TypeScript + Vite. Tests con Vitest. Para jugar hay que entrar con mail y contraseña: las cuentas y la partida en la nube van con Firebase, y además se guarda una copia en `localStorage` (§15).
 - **Pantalla:** vertical, con una resolución lógica de 1080×1920 escalada con `FIT`. En escritorio se ve como una columna centrada.
 - **Publicado en:** https://felipearanguren.github.io/fusionitos/ (GitHub Pages; se actualiza solo con cada push a `master`).
 
@@ -391,14 +391,15 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
   - la capacidad del piso que se ve ("7/12").
 - **Campo:** fondo del color del piso con decoración tenue.
 - **Banner** "¡Campo lleno!" mientras no quede lugar en el piso que se ve.
-- **Popups:** "¡Nueva criatura descubierta!", la tienda, la bienvenida tras una ausencia, la confirmación de reinicio y los pasos del acceso directo. Se muestran de a uno y, mientras están abiertos, bloquean el campo, las pestañas y el teclado. Los descubrimientos y los cierres de pisos (§8) van en una misma cola, en el orden en que pasaron.
+- **Popups:** "¡Nueva criatura descubierta!", la tienda, la bienvenida tras una ausencia, la confirmación de reinicio, los pasos del acceso directo y la cuenta. Se muestran de a uno y, mientras están abiertos, bloquean el campo, las pestañas y el teclado. Los descubrimientos y los cierres de pisos (§8) van en una misma cola, en el orden en que pasaron.
 - **Toasts:** avisos cortos ("¡Piso 2 desbloqueado!", "¡Ahora los huevos caen en el Piso 2: Granja!", "El Piso 2 está lleno", "¡Nivel máximo!", qué abre un piso bloqueado, que un piso quedó cerrado). Los largos pasan a dos líneas.
-- **Pie:** las pestañas de pisos (5 a la vista, deslizables y con flechas) y, debajo, una pista de cómo jugar, el botón verde 📲 de acceso directo (cuando se ofrece, §14), los botones redondos 🔊 (efectos) y 🎵 (música) y el botón **Reiniciar** (abajo, para no tocarlo sin querer). Si la pista no entra antes de los botones, se achica.
+- **Pie:** las pestañas de pisos (5 a la vista, deslizables y con flechas) y, debajo, una pista de cómo jugar, el botón verde 📲 de acceso directo (cuando se ofrece, §14), los botones redondos 👤 (la cuenta, §15), 🔊 (efectos) y 🎵 (música) y el botón **Reiniciar** (abajo, para no tocarlo sin querer). Si la pista no entra antes de los botones, se achica.
 
 ## 10. Guardado — FASE 1
 
-- Se guarda en `localStorage`, en la clave `fusionitos.save`, como JSON versionado: `{ version, savedAt, state }`.
-- **Cuándo se guarda:** autoguardado cada **10 s**, y también al ocultar la pestaña (`visibilitychange`), al cerrarla (`pagehide` / `beforeunload`) y justo después de reiniciar.
+- Cada cuenta tiene su copia en `localStorage`, en la clave `fusionitos.save.account.<uid>`, como JSON versionado: `{ version, savedAt, state }`. El mismo texto se sube a la nube (§15).
+- `fusionitos.save` es la partida de antes de las cuentas: pasa a la primera cuenta que entra en ese dispositivo y queda una copia en `fusionitos.save.device-backup` (§15).
+- **Cuándo se guarda:** autoguardado cada **10 s**, y también al ocultar la pestaña (`visibilitychange`), al cerrarla (`pagehide` / `beforeunload`) y justo después de reiniciar. A la nube se sube con menos frecuencia (§15).
 - **Qué se guarda (versión 2):**
   - las monedas y el progreso del próximo huevo;
   - las entidades de cada piso, con posición **normalizada** (0..1 dentro del campo) y el progreso de su pulso;
@@ -406,11 +407,11 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
   - `savedAt`: el último momento en que el juego corrió (base del ingreso offline).
 - **Validación al cargar:**
   - Los valores fuera de rango se corrigen y las entidades inválidas se descartan.
-  - Si el JSON está corrupto o la versión es desconocida, se copia a `fusionitos.save.corrupt` y el juego arranca de cero, sin romperse.
+  - Si el JSON está corrupto o la versión es desconocida, se copia a `<clave>.corrupt` y se ignora, sin romper el juego.
 - **Migraciones:** si cambia el formato, se sube `SAVE_VERSION` y se agrega una migración. v1 → v2 agrega las compras vacías; un guardado de F1/F2 carga sin perder nada.
 - **Guardados de cuando había 5 pisos:** cargan sin migración, porque los niveles son los mismos. Se completan los pisos y las compras que faltan, y los pisos nuevos arrancan bloqueados. El viejo piso 5 (Galaxia, niveles 25–30) pasa a ser el Pantano.
-- **Si `localStorage` falla** (modo privado, cuota llena), el juego sigue funcionando sin guardar.
-- **Reiniciar:** botón con un popup de confirmación. Borra todo y empieza de cero.
+- **Si `localStorage` falla** (modo privado, cuota llena), el juego sigue funcionando y guarda solo en la nube.
+- **Reiniciar:** botón con un popup de confirmación. Borra todo y empieza de cero, también en la nube.
 
 ## 11. Constantes de balance
 
@@ -489,8 +490,14 @@ Las constantes visuales (tamaños, velocidades de deambular, duraciones de anima
 - [x] Cuando los huevos suben, el piso de abajo se cierra: se vacía y queda con candado.
 - [x] Animación en orden: popup de la criatura nueva, persiana en el piso que se cierra y paso al piso de los huevos.
 
+### Extra — cuentas ✅
+- [x] Para jugar hay que entrar con mail y contraseña (Firebase); recuperar la contraseña por mail.
+- [x] La partida se guarda en la nube y se sigue en cualquier dispositivo; la de antes de las cuentas pasa a la cuenta.
+- [x] Si la partida se abre en otro lado, el dispositivo anterior deja de guardar y pide recargar.
+- [x] Botón 👤 con el mail, el estado de la nube y cerrar sesión.
+
 ### Ideas futuras (sin fase asignada)
-Arte definitivo para las 120 criaturas, logros, tutorial guiado y juego sin conexión.
+Arte definitivo para las 120 criaturas, logros, tutorial guiado y juego sin conexión. Cuentas: borrar la cuenta, cambiar el mail y verificarlo.
 
 ## 13. Sonido y música
 
@@ -533,5 +540,42 @@ El juego se puede instalar en el celular como una app: queda un ícono en la pan
   - Si el navegador avisa que se puede instalar (Chrome, Edge, Samsung Internet), abre su diálogo. Ese aviso se guarda al cargar y no se muestra el cartel automático del navegador.
   - Si no avisa (Safari, o Chrome abierto desde otra app como WhatsApp), muestra los pasos: en iPhone, Compartir → «Agregar a inicio»; en Android, el menú ⋮ → «Agregar a la pantalla principal» (o primero «Abrir en Chrome»).
   - No aparece en la compu sin aviso del navegador, ni con el juego abierto como app, ni después de instalarlo (se recuerda en `fusionitos.installed`).
-- **Progreso:** en Android, la app y el navegador comparten el guardado. En iPhone, la app de la pantalla de inicio tiene su propio guardado, aparte del de Safari.
+- **Progreso:** la partida es de la cuenta (§15). En iPhone, la app de la pantalla de inicio no comparte la sesión con Safari: la primera vez hay que entrar de nuevo, y aparece la misma partida.
 - **Al abrirlo** se ve el piso más alto desbloqueado (§8).
+
+## 15. Cuentas
+
+Para jugar hay que entrar con mail y contraseña. Así cada jugador tiene su partida y la sigue en cualquier celular o compu; si se le borra el navegador o cambia de dispositivo, no la pierde.
+
+- **Servicio:** Firebase, en el plan gratis.
+  - Authentication maneja las cuentas y manda los mails para elegir otra contraseña.
+  - Firestore guarda una partida por cuenta.
+  - La configuración está en `src/config/cloud.ts` y las reglas de acceso, en `firestore.rules`.
+- **Pantalla de ingreso:** es HTML encima de la página y el juego arranca recién después de entrar.
+  - Sirve para entrar a la cuenta o crearla, con mail y una contraseña de 6 caracteres o más. El 👁️ muestra la contraseña.
+  - "¿Olvidaste tu contraseña?" manda un mail de Firebase, en español, para elegir otra.
+  - Los errores salen en español: mail o contraseña incorrectos (sin decir cuál), mail ya usado, sin conexión, demasiados intentos…
+  - La sesión queda abierta en ese navegador, así que la próxima vez entra directo.
+- **Partida que ya había en el dispositivo** (de antes de las cuentas):
+  - La pantalla de ingreso avisa hasta qué piso llega.
+  - Al entrar, pasa a la cuenta. Si la cuenta ya tenía una partida, queda la más avanzada: la de mejor criatura descubierta y, si empatan, la de más monedas.
+  - Le toca a la primera cuenta que entra en ese dispositivo. Queda una copia en `fusionitos.save.device-backup`.
+- **Al abrir el juego:**
+  - Vale la partida más nueva de la cuenta: la de la nube o la copia del dispositivo (si se jugó sin conexión).
+  - El ingreso offline se cuenta desde ese guardado (§7.4).
+- **Guardado en la nube:**
+  - Se sube al abrir el juego, cada **1 min** mientras se juega, al ocultar o cerrar la pestaña, al reiniciar y al cerrar sesión.
+  - En el dispositivo se sigue guardando cada 10 s (§10).
+  - Los tiempos están en `CLOUD_SAVE` (`src/config/cloud.ts`).
+- **Sin conexión:**
+  - Con la sesión abierta y una copia en el dispositivo, se juega igual y la partida se sube cuando vuelve internet.
+  - Si no hay copia (la primera vez en ese dispositivo), pide reintentar.
+- **Varios dispositivos:** la partida la usa el último que la abrió.
+  - Si otro dispositivo o pestaña la abre, el anterior deja de guardar y muestra "Abriste tu partida en otro lado", con un botón para recargar y traer la partida más nueva. Así una pestaña vieja no pisa lo que se jugó en otro lado.
+  - Si al abrir no había conexión, toma la partida la primera subida que funcione: gana el último que se conecta.
+- **Botón 👤** (en el pie): muestra el mail, hace cuánto se subió la partida (o que no hay conexión) y **Cerrar sesión**, que sube la partida y vuelve a la pantalla de ingreso.
+- **En la nube** (`saves/{uid}`):
+  - `save` es el mismo texto que en `localStorage`.
+  - `session` identifica la apertura del juego que usa la partida.
+  - Las reglas dejan que cada cuenta lea y escriba solo su propia partida.
+- **No incluido por ahora:** borrar la cuenta, cambiar el mail y verificarlo.
