@@ -56,24 +56,24 @@ describe('ingreso total', () => {
 describe('ingreso offline', () => {
   const HOUR = 3_600_000;
 
-  it('es el 50 % del ingreso por el tiempo de ausencia', () => {
+  it('es el 20 % del ingreso por el tiempo de ausencia', () => {
     const state = emptyState();
     addCreature(state, 2); // 2/s
-    expect(offlineEarnings(state, HOUR)).toEqual({ amount: expect.closeTo(0.5 * 2 * 3600), awayMs: HOUR, countedMs: HOUR });
+    expect(offlineEarnings(state, HOUR)).toEqual({ amount: expect.closeTo(0.2 * 2 * 3600), awayMs: HOUR, countedMs: HOUR });
   });
 
   it('cuenta como máximo 4 horas', () => {
     const state = emptyState();
     addCreature(state, 1);
     const earnings = offlineEarnings(state, 10 * HOUR);
-    expect(earnings).toEqual({ amount: expect.closeTo(0.5 * 0.8 * 4 * 3600), awayMs: 10 * HOUR, countedMs: 4 * HOUR });
+    expect(earnings).toEqual({ amount: expect.closeTo(0.2 * 0.8 * 4 * 3600), awayMs: 10 * HOUR, countedMs: 4 * HOUR });
   });
 
   it('una ausencia de menos de un minuto no cuenta', () => {
     const state = emptyState();
     addCreature(state, 1);
     expect(offlineEarnings(state, 59_999)).toBeNull();
-    expect(offlineEarnings(state, 60_000)?.amount).toBeCloseTo(24);
+    expect(offlineEarnings(state, 60_000)?.amount).toBeCloseTo(9.6);
   });
 
   it('sin criaturas, o con tiempos inválidos, no hay nada', () => {

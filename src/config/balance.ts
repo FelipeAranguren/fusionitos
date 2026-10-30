@@ -39,8 +39,8 @@ export const BALANCE = {
   /** Solo se compran criaturas con n ≤ máximo descubierto − esto. */
   SHOP_LEVELS_BELOW_MAX: 2,
 
-  /** Ingreso offline = tasa × ingreso total × min(ausencia, tope). */
-  OFFLINE_INCOME_RATE: 0.5,
+  /** Ingreso offline = tasa × ingreso total × min(ausencia, tope). Era 0.5. */
+  OFFLINE_INCOME_RATE: 0.2,
   OFFLINE_MAX_HOURS: 4,
   /** Ausencias más cortas no cuentan (una recarga no da un popup de bienvenida). */
   OFFLINE_MIN_SECONDS: 60,

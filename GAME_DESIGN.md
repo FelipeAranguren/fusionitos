@@ -155,14 +155,14 @@ precio(n, k) = SHOP_BASE_PRICE × SHOP_PRICE_GROWTH^(n−1) × SHOP_PURCHASE_GRO
 
 ```
 offline = OFFLINE_INCOME_RATE × ingresoTotal × min(tiempoAusente, OFFLINE_MAX_HOURS)
-        = 50 % del ingreso, con un máximo de 4 horas
+        = 20 % del ingreso, con un máximo de 4 horas
 ```
 
 - **Cuándo se calcula:**
   - **al abrir el juego:** por el tiempo desde `savedAt` del guardado;
   - **al volver a la pestaña:** por el tiempo que estuvo oculta. Con la pestaña oculta el juego está en pausa, y mientras tanto los guardados quedan fechados en el momento en que se ocultó; así, si después se cierra, la ausencia se cuenta entera.
 - **Mínimo:** las ausencias de menos de **60 s** (`OFFLINE_MIN_SECONDS`) no cuentan; una recarga no da bienvenida. Sin criaturas tampoco hay nada que cobrar.
-- **Popup "¡Hola de nuevo!":** muestra cuánto tiempo pasó ("Estuviste afuera 2 h 15 min."), cuánto juntaron las criaturas y la regla (50 %, hasta 4 h). Las monedas ya están sumadas cuando aparece.
+- **Popup "¡Hola de nuevo!":** muestra cuánto tiempo pasó ("Estuviste afuera 2 h 15 min."), cuánto juntaron las criaturas y la regla (20 %, hasta 4 h). Las monedas ya están sumadas cuando aparece.
 
 ### 7.5 Tabla de niveles
 
@@ -434,7 +434,7 @@ Generada con el código (`npm run design:tables`). Las columnas de F3 son refere
 | `SHOP_PRICE_GROWTH` | 2.54 | Tienda · factor de precio por nivel (apenas más que `INCOME_GROWTH`, ver §7.3). |
 | `SHOP_PURCHASE_GROWTH` | 1.15 | Tienda · encarecimiento por compra. |
 | `SHOP_LEVELS_BELOW_MAX` | 2 | Tienda · distancia mínima a la máxima descubierta. |
-| `OFFLINE_INCOME_RATE` | 0.5 | Offline · fracción del ingreso. |
+| `OFFLINE_INCOME_RATE` | 0.2 | Offline · fracción del ingreso. Era 0.5. |
 | `OFFLINE_MAX_HOURS` | 4 | Offline · tope de la ausencia que cuenta. |
 | `OFFLINE_MIN_SECONDS` | 60 | Offline · ausencia mínima para que cuente. |
 
@@ -481,6 +481,7 @@ Las constantes visuales (tamaños, velocidades de deambular, duraciones de anima
 - [x] Ingreso de todas las criaturas −20 % (`INCOME_BASE` 0.8): la partida pasa de 4 h 19 min a 5 h 23 min.
 - [x] Los huevos caen 2 pisos por debajo del más alto (eran 3): quedan 3 pisos abiertos.
 - [x] Los huevos caen en el piso de abajo del más alto: quedan 2 pisos abiertos. Abrir huevos ayuda a subir, y la partida baja a 4 h 27 min.
+- [x] Ingreso offline al 20 % (era 50 %): rinde menos dejar el juego y volver. El simulador no cuenta ausencias, así que sus 4 h 27 min no cambian.
 
 ### Extra — acceso directo ✅
 - [x] Instalable como app (manifest e íconos): abre a pantalla completa, en vertical.

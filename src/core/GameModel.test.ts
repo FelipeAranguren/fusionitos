@@ -171,10 +171,10 @@ describe('GameModel', () => {
     addCreature(state, 3); // 5/s
     const model = modelWith(state);
     const report = model.applyOfflineEarnings(2 * 3_600_000);
-    expect(report?.amount).toBeCloseTo(0.5 * 5 * 7200);
-    expect(model.coins).toBeCloseTo(0.5 * 5 * 7200);
+    expect(report?.amount).toBeCloseTo(0.2 * 5 * 7200);
+    expect(model.coins).toBeCloseTo(0.2 * 5 * 7200);
     expect(model.applyOfflineEarnings(10_000)).toBeNull();
-    expect(model.coins).toBeCloseTo(0.5 * 5 * 7200);
+    expect(model.coins).toBeCloseTo(0.2 * 5 * 7200);
   });
 
   it('debugAddCreature agrega en el piso de su nivel y respeta la capacidad', () => {
