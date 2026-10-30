@@ -32,7 +32,7 @@ Antes de dar algo por terminado: `npm test` y `npm run build` sin errores.
 - Si los tests fallan, no se publica.
 - Pages sirve el juego en una subcarpeta (`/fusionitos/`): por eso el build usa rutas relativas (`base: './'` en `vite.config.ts`). No lo cambies.
 - Pushear publica. Hacelo solo cuando se pida.
-- **Firebase** (consola en https://console.firebase.google.com, plan gratis):
+- **Firebase** (proyecto `fusionitos`, consola en https://console.firebase.google.com, plan gratis):
   - Los datos del proyecto van en `src/config/cloud.ts`. No son secretos: viajan en el juego publicado.
   - Lo que protege las partidas son las reglas de `firestore.rules`. Si las cambiás, publicalas también en la consola (Firestore → Reglas): el repo no las sube solo.
   - En la consola tiene que estar habilitado Authentication → Correo electrónico/contraseña, y `felipearanguren.github.io` en los dominios autorizados.

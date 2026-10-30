@@ -12,14 +12,17 @@ export interface FirebaseWebConfig {
   appId: string;
 }
 
-/** Proyecto real (consola de Firebase → Configuración del proyecto → Tus apps → app web). */
+/**
+ * Proyecto real (consola de Firebase → Configuración del proyecto → Tus apps → app web).
+ * Sin `measurementId`: el juego no usa Analytics.
+ */
 export const FIREBASE_CONFIG: Readonly<FirebaseWebConfig> = {
-  apiKey: '',
-  authDomain: '',
-  projectId: '',
-  storageBucket: '',
-  messagingSenderId: '',
-  appId: '',
+  apiKey: 'AIzaSyB-UOTypKmqmUAYZZp4XT3KetlwUEgpRs8',
+  authDomain: 'fusionitos.firebaseapp.com',
+  projectId: 'fusionitos',
+  storageBucket: 'fusionitos.firebasestorage.app',
+  messagingSenderId: '969980111107',
+  appId: '1:969980111107:web:b9df41ff0c4ee4eb5be136',
 };
 
 /** Emuladores locales (`npm run emulators`) para probar sin tocar el proyecto real (`npm run dev:emulators`). */
